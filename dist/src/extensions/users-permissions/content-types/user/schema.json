@@ -1,0 +1,68 @@
+{
+    "kind": "collectionType",
+    "collectionName": "up_users",
+    "info": {
+        "name": "user",
+        "description": "",
+        "singularName": "user",
+        "pluralName": "users",
+        "displayName": "User"
+    },
+    "options": {
+        "draftAndPublish": true,
+        "timestamps": true
+    },
+    "attributes": {
+        "firstname": {
+            "type": "string",
+            "minLength": 3,
+            "unique": false,
+            "configurable": false,
+            "required": true
+        },
+        "lastname": {
+            "type": "string",
+            "minLength": 3,
+            "unique": false,
+            "configurable": false,
+            "required": true
+        },
+        "email": {
+            "type": "email",
+            "minLength": 6,
+            "configurable": false,
+            "unique": true,
+            "required": true
+        },
+        "password": {
+            "type": "password",
+            "minLength": 6,
+            "configurable": false,
+            "private": true,
+            "required": true
+        },
+        "confirmed": {
+            "type": "boolean",
+            "default": false,
+            "configurable": false
+        },
+        "blocked": {
+            "type": "boolean",
+            "default": false,
+            "configurable": false
+        },
+        "role": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.role",
+            "inversedBy": "users",
+            "configurable": false
+        },
+        "transactions": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::transaction.transaction",
+            "mappedBy": "users_id"
+        }
+    }
+}

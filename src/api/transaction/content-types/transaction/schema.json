@@ -1,0 +1,55 @@
+{
+  "kind": "collectionType",
+  "collectionName": "transactions",
+  "info": {
+    "singularName": "transaction",
+    "pluralName": "transactions",
+    "displayName": "Transaction",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "transaction_type": {
+      "type": "string",
+      "required": true
+    },
+    "amount": {
+      "type": "float",
+      "required": true
+    },
+    "date": {
+      "type": "datetime",
+      "required": true
+    },
+    "note": {
+      "type": "text"
+    },
+    "wallet_id": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::wallet.wallet",
+      "inversedBy": "transactions"
+    },
+    "currency": {
+      "type": "string",
+      "default": "RFW"
+    },
+    "users_id": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "transactions"
+    },
+    "wallet": {
+      "type": "string",
+      "required": true
+    },
+    "category": {
+      "type": "string",
+      "required": true
+    }
+  }
+}
