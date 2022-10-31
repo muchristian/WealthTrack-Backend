@@ -9,7 +9,6 @@ export const auth = (strapi) => {
     const accessToken = ctx.cookies.get("accessToken");
     const refreshToken = ctx.cookies.get("refreshToken");
 
-    console.log(refreshToken);
     if (!accessToken) {
       throw new ValidationError("access token not found");
     }

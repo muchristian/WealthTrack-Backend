@@ -5,6 +5,7 @@
  */
 
 import { factories } from "@strapi/strapi";
+import { response } from "../../../utils/response";
 import walletService from "../../wallet/services/wallet";
 
 const filterData = (data, type) => {
@@ -24,12 +25,10 @@ export default factories.createCoreController(
         debt_loan: filterData(entity, "Debt/Loan"),
         expense: filterData(entity, "Expense"),
       };
-      console.log(data);
       return data;
     },
 
     async createTransaction(ctx) {
-      console.log(ctx.request.body);
       const { wallet_id } = ctx.request.body.data;
       // const findWallet = walletService().findOne(wallet_id);
       const findWallet = await strapi
@@ -37,11 +36,45 @@ export default factories.createCoreController(
         .findWallet(wallet_id);
 
       if (!findWallet) return ctx.NotFound("The wallet does not exist");
-      console.log(findWallet);
       const entity = await strapi
         .service("api::transaction.transaction")
         .create({ ...ctx.request.body.data, wallet: findWallet.name });
-      return entity;
+
+      return response(
+        ctx,
+        200,
+        "Transaction has been created successfully",
+        entity,
+        undefined
+      );
+    },
+
+    async update(ctx) {
+      // some logic here
+      const result = await super.update(ctx);
+      // some more logic
+
+      return response(
+        ctx,
+        200,
+        "Transaction has been updated successfully",
+        result.data,
+        undefined
+      );
+    },
+
+    async delete(ctx) {
+      // some logic here
+      const result = await super.delete(ctx);
+      // some more logic
+
+      return response(
+        ctx,
+        200,
+        "Transaction has been deleted successfully",
+        result.data,
+        undefined
+      );
     },
   })
 );

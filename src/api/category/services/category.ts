@@ -9,8 +9,6 @@ export default factories.createCoreService(
   ({ strapi }) => ({
     async find(queries: any) {
       const { transactionType } = queries;
-      console.log("----------------");
-      console.log(transactionType);
       return strapi.entityService.findMany("api::category.category", {
         populate: {
           transaction_type: {
@@ -21,6 +19,11 @@ export default factories.createCoreService(
             },
           },
         },
+      });
+    },
+    async create(data) {
+      return strapi.entityService.create("api::category.category", {
+        data,
       });
     },
   })

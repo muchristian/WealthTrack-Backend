@@ -21,6 +21,9 @@
             "relation": "manyToOne",
             "target": "api::transaction-type.transaction-type",
             "inversedBy": "categories"
+        },
+        "budget": {
+            "type": "float"
         }
     }
 }

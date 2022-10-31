@@ -9,7 +9,6 @@ export const auth = (strapi) => {
     const accessToken = ctx.cookies.get("accessToken");
     const refreshToken = ctx.cookies.get("refreshToken");
 
-    console.log(refreshToken);
     if (!accessToken) {
       throw new ValidationError("access token not found");
     }
@@ -20,10 +19,6 @@ export const auth = (strapi) => {
       expired && refreshToken
         ? authUtils.verifyToken(refreshToken)
         : { payload: null };
-
-    console.log(payload);
-    console.log("fdsafdsa");
-    console.log(refresh);
 
     if (payload) {
       const user = await strapi.db
@@ -45,8 +40,6 @@ export const auth = (strapi) => {
     if (!refresh) {
       throw new ValidationError("refresh token not found");
     }
-
-    console.log(refresh);
 
     const user = await strapi.db
       .query("plugin::users-permissions.user")

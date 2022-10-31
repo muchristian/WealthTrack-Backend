@@ -20,10 +20,10 @@ const customRouter = (
       if (!routes) routes = innerRouter.routes;
       const obj = {};
       routeOveride.map((overide) => {
-        obj[overide.path] = overide;
+        obj[`${overide.method}-${overide.path}`] = overide;
       });
       const newRoutes = routes.map((route) => {
-        const newRoute = obj[route.path];
+        const newRoute = obj[`${route.method}-${route.path}`];
         if (newRoute) {
           return newRoute;
         } else {
@@ -41,6 +41,18 @@ const myOverideRoutes = [
     method: "GET",
     path: "/categories", // Only match when the URL parameter is composed of lowercase letters
     handler: "category.findAll",
+    config: {
+      middlewares: [
+        // middlewares.auth(strapi)
+      ],
+    },
+  },
+
+  {
+    // Path defined with a regular expression
+    method: "POST",
+    path: "/categories", // Only match when the URL parameter is composed of lowercase letters
+    handler: "category.create",
     config: {
       middlewares: [
         // middlewares.auth(strapi)

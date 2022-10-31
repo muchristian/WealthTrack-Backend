@@ -16,10 +16,10 @@ const customRouter = (innerRouter, routeOveride = [], extraRoutes = []) => {
                 routes = innerRouter.routes;
             const obj = {};
             routeOveride.map((overide) => {
-                obj[overide.path] = overide;
+                obj[`${overide.method}-${overide.path}`] = overide;
             });
             const newRoutes = routes.map((route) => {
-                const newRoute = obj[route.path];
+                const newRoute = obj[`${route.method}-${route.path}`];
                 if (newRoute) {
                     return newRoute;
                 }
@@ -38,6 +38,17 @@ const myOverideRoutes = [
         method: "GET",
         path: "/categories",
         handler: "category.findAll",
+        config: {
+            middlewares: [
+            // middlewares.auth(strapi)
+            ],
+        },
+    },
+    {
+        // Path defined with a regular expression
+        method: "POST",
+        path: "/categories",
+        handler: "category.create",
         config: {
             middlewares: [
             // middlewares.auth(strapi)
