@@ -1,71 +1,47 @@
 import utils from "@strapi/utils";
 import _ from "lodash";
 import * as authUtils from "../utils/auth";
+import { ErrorHandler } from "../utils/errorHandler.util";
 
 const { ValidationError } = utils.errors;
 
-export const auth = (strapi) => {
+export const access = (options, { strapi }) => {
   return async (ctx, next) => {
     const accessToken = ctx.cookies.get("accessToken");
-    const refreshToken = ctx.cookies.get("refreshToken");
-
-    if (!accessToken) {
-      throw new ValidationError("access token not found");
-    }
-
     const { payload, expired } = authUtils.verifyToken(accessToken);
-
-    const { payload: refresh } =
-      expired && refreshToken
-        ? authUtils.verifyToken(refreshToken)
-        : { payload: null };
-
-    if (payload) {
-      const user = await strapi.db
-        .query("plugin::users-permissions.user")
-        .findOne({
-          where: {
-            id: payload.id,
-          },
-        });
-
-      if (!user) {
-        throw new ValidationError("Invalid user");
-      }
-
-      ctx.state.user = user;
-      return next();
+    if (!payload || expired) {
+      return ErrorHandler(ctx, 401, "Unauthorized");
     }
-
-    if (!refresh) {
-      throw new ValidationError("refresh token not found");
-    }
-
-    const user = await strapi.db
+    const isAccessTokenExist = await strapi.db
       .query("plugin::users-permissions.user")
       .findOne({
         where: {
-          id: refresh.id,
+          id: payload.id,
         },
       });
 
-    if (!user) {
-      throw new ValidationError("Invalid user");
+    if (!isAccessTokenExist) {
+      return ErrorHandler(ctx, 401, "Unauthorized");
     }
+    ctx.user = isAccessTokenExist;
+    return next();
+  };
+};
 
-    const newAccessToken = strapi.plugins["users-permissions"].services[
-      "jwt"
-    ].issue(
-      { ..._.pick(user, ["id", "firstname", "lastname", "email"]) },
-      { expiresIn: "5s" }
-    );
-
-    ctx.cookies.set("accessToken", newAccessToken, {
-      httpOnly: true,
-    });
-
-    ctx.state.user = authUtils.verifyToken(newAccessToken).payload;
-
+export const refresh = (options, { strapi }) => {
+  return async (ctx, next) => {
+    const refreshToken = ctx.cookies.get("refreshToken");
+    const isRefreshTokenExist = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: {
+          refreshToken,
+        },
+      });
+    if (!isRefreshTokenExist) {
+      return ErrorHandler(ctx, 401, "Unauthorized");
+    }
+    ctx.user = isRefreshTokenExist;
     return next();
   };
 };

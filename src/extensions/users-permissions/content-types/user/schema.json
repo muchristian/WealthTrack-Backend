@@ -63,6 +63,9 @@
       "relation": "oneToMany",
       "target": "api::transaction.transaction",
       "mappedBy": "users_id"
+    },
+    "refreshToken": {
+      "type": "text"
     }
   }
 }

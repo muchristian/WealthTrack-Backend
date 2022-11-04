@@ -5,6 +5,7 @@
  */
 
 import { factories } from "@strapi/strapi";
+import { ErrorHandler } from "../../../utils/errorHandler.util";
 import { response } from "../../../utils/response";
 import walletService from "../../wallet/services/wallet";
 
@@ -29,16 +30,15 @@ export default factories.createCoreController(
     },
 
     async createTransaction(ctx) {
-      const { wallet_id } = ctx.request.body.data;
-      // const findWallet = walletService().findOne(wallet_id);
+      const { wallet } = ctx.request.body.data;
       const findWallet = await strapi
         .service("api::transaction.transaction")
-        .findWallet(wallet_id);
-
-      if (!findWallet) return ctx.NotFound("The wallet does not exist");
+        .findWallet(wallet);
+      if (!findWallet)
+        return ErrorHandler(ctx, 400, "The wallet does not exist");
       const entity = await strapi
         .service("api::transaction.transaction")
-        .create({ ...ctx.request.body.data, wallet: findWallet.name });
+        .create({ ...ctx.request.body.data, wallet: findWallet[0].name });
 
       return response(
         ctx,
@@ -51,16 +51,23 @@ export default factories.createCoreController(
 
     async update(ctx) {
       // some logic here
-      const result = await super.update(ctx);
-      // some more logic
+      ctx.request.body.data = {
+        ...ctx.request.body,
+      };
+      try {
+        const result = await super.update(ctx);
+        // some more logic
 
-      return response(
-        ctx,
-        200,
-        "Transaction has been updated successfully",
-        result.data,
-        undefined
-      );
+        return response(
+          ctx,
+          200,
+          "Transaction has been updated successfully",
+          result.data,
+          undefined
+        );
+      } catch (error) {
+        console.log(error);
+      }
     },
 
     async delete(ctx) {

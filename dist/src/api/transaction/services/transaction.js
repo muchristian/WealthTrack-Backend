@@ -13,7 +13,9 @@ exports.default = strapi_1.factories.createCoreService("api::transaction.transac
             data,
         });
     },
-    async findWallet(wallet_id) {
-        return strapi.entityService.findOne("api::wallet.wallet", wallet_id);
+    async findWallet(wallet) {
+        return strapi.entityService.findMany("api::wallet.wallet", {
+            filters: { name: wallet },
+        });
     },
 }));

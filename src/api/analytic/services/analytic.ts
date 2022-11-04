@@ -70,6 +70,7 @@ export default factories.createCoreService(
           },
         }
       );
+
       const transactionsObj = {
         expense: 0,
         "debt/loan": 0,
@@ -140,6 +141,7 @@ export default factories.createCoreService(
       };
 
       const totalAmountUsedByEachExpense = {};
+      const totalAmountUsedByEachExpenseResult = [];
       const expenses = transactions.filter(
         (t) => t.transaction_type === "Expense"
       );
@@ -164,12 +166,23 @@ export default factories.createCoreService(
         totalAmountUsedByEachExpense[key].percentage = Math.round(
           (totalAmountUsedByEachExpense[key].amount / +value) * 100
         );
+        totalAmountUsedByEachExpenseResult.push({
+          name: key,
+          amount: totalAmountUsedByEachExpense[key].amount,
+          percentage: totalAmountUsedByEachExpense[key].percentage,
+        });
       }
 
       return {
+        transactionsTypesTotal: {
+          income: transactionsByType[transactionsByType.length - 1]["income"],
+          "debt/loan":
+            transactionsByType[transactionsByType.length - 1]["debt/loan"],
+          expense: transactionsByType[transactionsByType.length - 1]["expense"],
+        },
         transactionsAnalytics: transactionsByType,
         walletsAnalytics: totalTransactionsBywallet,
-        expensesAnalytics: totalAmountUsedByEachExpense,
+        expensesAnalytics: totalAmountUsedByEachExpenseResult,
       };
     },
   })

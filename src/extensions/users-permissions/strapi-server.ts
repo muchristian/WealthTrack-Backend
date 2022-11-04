@@ -2,7 +2,7 @@ import * as validations from "./validation/auth";
 import utils from "@strapi/utils";
 import { hashPassword } from "./utils/auth";
 import { sanitizeOutput } from "./utils/sanitize";
-import { success } from "./utils/response";
+import { response } from "../../utils/response";
 import * as middlewares from "../../middlewares/auth";
 import _ from "lodash";
 
@@ -36,13 +36,16 @@ export default function (plugin) {
         },
       });
 
-    return success(
+    return response(
+      undefined,
+      201,
       "User authenticated successfully",
       await sanitizeOutput(
         result,
         ctx,
         strapi.getModel("plugin::users-permissions.user")
-      )
+      ),
+      undefined
     );
   };
 
@@ -60,7 +63,7 @@ export default function (plugin) {
     if (!user) {
       throw new ValidationError("Invalid email or password");
     }
-    const validPassword = strapi.plugins["users-permissions"].services[
+    const validPassword = await strapi.plugins["users-permissions"].services[
       "user"
     ].validatePassword(password, user.password);
     if (!validPassword) {
@@ -86,20 +89,50 @@ export default function (plugin) {
       "jwt"
     ].issue({ id: user.id }, { expiresIn: "1y" });
 
+    await strapi.db.query("plugin::users-permissions.user").update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        refreshToken,
+      },
+    });
+
     ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
     ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
 
-    return success(
+    return response(
+      ctx,
+      200,
       "User authenticated successfully",
       await sanitizeOutput(
         user,
         ctx,
         strapi.getModel("plugin::users-permissions.user")
-      )
+      ),
+      refreshToken
     );
   };
 
-  plugin.controllers.user["me"] = async (ctx) => {
+  plugin.controllers.auth["refreshToken"] = (ctx) => {
+    const { refreshToken, id } = ctx.user;
+    const accessToken = strapi.plugins["users-permissions"].services[
+      "jwt"
+    ].issue(
+      { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
+      { expiresIn: "5s" }
+    );
+    ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+    return response(
+      ctx,
+      200,
+      "Access token has been refreshed successfully",
+      undefined,
+      refreshToken
+    );
+  };
+
+  plugin.controllers.user["find"] = async (ctx) => {
     return "fdafdsa";
   };
 
@@ -121,16 +154,27 @@ export default function (plugin) {
       path: "/auth/login",
       handler: "auth.callback",
       config: {
+        middlewares: [],
         policies: [],
         prefix: "",
       },
     },
     {
       method: "GET",
-      path: "/users/me",
-      handler: "user.me",
+      path: "/auth/refresh-token",
+      handler: "auth.refreshToken",
       config: {
-        middlewares: ["plugin::users-permissions.auth"],
+        middlewares: ["plugin::users-permissions.access"],
+        policies: [],
+        prefix: "",
+      },
+    },
+    {
+      method: "GET",
+      path: "/users",
+      handler: "user.find",
+      config: {
+        middlewares: ["plugin::users-permissions.access"],
         prefix: "",
       },
     }

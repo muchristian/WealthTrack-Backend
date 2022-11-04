@@ -21,6 +21,15 @@ export default factories.createCoreService(
         },
       });
     },
+
+    async findMany() {
+      return strapi.entityService.findMany("api::category.category", {
+        populate: {
+          transaction_type: true,
+        },
+      });
+    },
+
     async create(data) {
       return strapi.entityService.create("api::category.category", {
         data,

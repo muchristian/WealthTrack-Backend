@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  *  transaction controller
  */
 const strapi_1 = require("@strapi/strapi");
+const errorHandler_util_1 = require("../../../utils/errorHandler.util");
 const response_1 = require("../../../utils/response");
 const filterData = (data, type) => {
   return data.filter((d) => d.transaction_type == type);
@@ -24,15 +25,19 @@ exports.default = strapi_1.factories.createCoreController(
       return data;
     },
     async createTransaction(ctx) {
-      const { wallet_id } = ctx.request.body.data;
-      // const findWallet = walletService().findOne(wallet_id);
+      const { wallet } = ctx.request.body.data;
       const findWallet = await strapi
         .service("api::transaction.transaction")
-        .findWallet(wallet_id);
-      if (!findWallet) return ctx.NotFound("The wallet does not exist");
+        .findWallet(wallet);
+      if (!findWallet)
+        return (0, errorHandler_util_1.ErrorHandler)(
+          ctx,
+          400,
+          "The wallet does not exist"
+        );
       const entity = await strapi
         .service("api::transaction.transaction")
-        .create({ ...ctx.request.body.data, wallet: findWallet.name });
+        .create({ ...ctx.request.body.data, wallet: findWallet[0].name });
       return (0, response_1.response)(
         ctx,
         200,
@@ -43,15 +48,22 @@ exports.default = strapi_1.factories.createCoreController(
     },
     async update(ctx) {
       // some logic here
-      const result = await super.update(ctx);
-      // some more logic
-      return (0, response_1.response)(
-        ctx,
-        200,
-        "Transaction has been updated successfully",
-        result.data,
-        undefined
-      );
+      ctx.request.body.data = {
+        ...ctx.request.body,
+      };
+      try {
+        const result = await super.update(ctx);
+        // some more logic
+        return (0, response_1.response)(
+          ctx,
+          200,
+          "Transaction has been updated successfully",
+          result.data,
+          undefined
+        );
+      } catch (error) {
+        console.log(error);
+      }
     },
     async delete(ctx) {
       // some logic here

@@ -15,20 +15,12 @@ const generateToken = (data, expire = "5m") => {
 };
 exports.generateToken = generateToken;
 const verifyToken = (token) => {
-    const result = strapi.plugins["users-permissions"].services["jwt"]
-        .verify(token)
-        .then((decoded) => {
-        return {
-            payload: decoded,
-            expired: false,
-        };
-    })
-        .catch((error) => {
-        return {
-            payload: null,
-            expired: error.message.includes("Invalid token."),
-        };
-    });
-    return result;
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        return { payload: decoded, expired: false };
+    }
+    catch (error) {
+        return { payload: null, expired: error.message.includes("jwt expired") };
+    }
 };
 exports.verifyToken = verifyToken;
