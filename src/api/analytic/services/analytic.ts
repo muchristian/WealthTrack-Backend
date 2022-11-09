@@ -6,7 +6,7 @@ import { factories } from "@strapi/strapi";
 import { eachDayOfInterval, format } from "date-fns";
 import Koa from "koa";
 import {
-  dateFormatBytype,
+  getDataBytype,
   getActualDateRange,
   parseDate,
 } from "../../../utils/date.util";
@@ -15,18 +15,15 @@ const filterData = (data, attr, type) => {
   return data.filter((d) => d[attr] == type);
 };
 
-const filterDataByDate = (data, type, date) => {
+const filterDataByDate = (data, date) => {
   const arr = [];
   for (const d of data) {
     const parsedDt = new Date(d.date);
     const result =
-      dateFormatBytype(
-        `${format(parsedDt, "dd")}-${format(parsedDt, "MM")}-${format(
-          parsedDt,
-          "yyyy"
-        )}`,
-        type
-      ) === date;
+      `${format(parsedDt, "dd")}-${format(parsedDt, "MM")}-${format(
+        parsedDt,
+        "yyyy"
+      )}` === date;
 
     if (result) {
       arr.push(arr, d);
@@ -54,11 +51,8 @@ export default factories.createCoreService(
       const dates = eachDayOfInterval({
         start: actualStartDate,
         end: actualEndDate,
-      }).map((d) =>
-        dateFormatBytype(
-          `${format(d, "dd")}-${format(d, "MM")}-${format(d, "yyyy")}`,
-          type
-        )
+      }).map(
+        (d) => `${format(d, "dd")}-${format(d, "MM")}-${format(d, "yyyy")}`
       );
       const transactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
@@ -86,7 +80,7 @@ export default factories.createCoreService(
 
       const transactionsByType = [];
       for (const date of dates) {
-        const transactionsByDate = filterDataByDate(transactions, "day", date);
+        const transactionsByDate = filterDataByDate(transactions, date);
         const expenseData = filterData(
           transactionsByDate,
           "transaction_type",
@@ -179,8 +173,9 @@ export default factories.createCoreService(
           "debt/loan":
             transactionsByType[transactionsByType.length - 1]["debt/loan"],
           expense: transactionsByType[transactionsByType.length - 1]["expense"],
+          total_transactions: transactions.length,
         },
-        transactionsAnalytics: transactionsByType,
+        transactionsAnalytics: getDataBytype(transactionsByType),
         walletsAnalytics: totalTransactionsBywallet,
         expensesAnalytics: totalAmountUsedByEachExpenseResult,
       };

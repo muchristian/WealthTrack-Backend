@@ -2,24 +2,50 @@ import { endOfDay, subDays } from "date-fns";
 import Koa from "koa";
 import { ErrorHandler } from "./errorHandler.util";
 
-export const dateFormatBytype = (
-  date: string,
-  type: string = "day"
-): string => {
-  switch (type) {
-    case "day":
-      return date;
-    case "month":
-      return date.split("-").splice(0, 1).join("-");
-    case "year": {
-      const arr = date.split("-");
-      for (let i = 0; i <= 1; i++) {
-        arr.splice(i, 1);
+export const getDataBytype = (data: any, type: string = "day"): {}[] => {
+  if (type === "day") {
+    console.log(data[0].date);
+    const newDate = new Date(reverse(data[0].date));
+    console.log(newDate);
+    return data;
+  } else {
+    const groups = data.reduce((groups, d) => {
+      const date = dateFormByType(new Date(reverse(d.date)), type);
+      if (!groups[date]) {
+        groups[date] = {
+          date: "",
+          expense: 0,
+          "debt/loan": 0,
+          income: 0,
+        };
       }
-      return arr.join("-");
-    }
+      console.log(d);
+      console.log(groups[date].expense);
+      groups[date] = Object.assign(groups[date], {
+        expense: groups[date].expense + d.expense,
+        "debt/loan": groups[date]["debt/loan"] + d["debt/loan"],
+        income: groups[date].income + d.income,
+      });
+      return groups;
+    }, {});
+
+    console.log(Object.values(groups));
+    return Object.values(groups);
   }
 };
+
+const reverse = (date: string) => {
+  return date.split("-").reverse().join("-");
+};
+
+const dateFormByType = (date: Date, type: string) => {
+  console.log(date);
+  return type === "month"
+    ? date.toLocaleString("en-us", { month: "short", year: "numeric" })
+    : date.toLocaleString("en-us", { year: "numeric" });
+};
+
+const getMonth = (month: string) => {};
 
 export const parseDate = (ctx, d: string): Date => {
   if (d !== "" && !/^(\d{4})-(\d{2})-(\d{2})$/.test(d))

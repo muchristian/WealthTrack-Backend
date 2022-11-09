@@ -22,7 +22,7 @@ export default function (plugin) {
         },
       });
     if (user) {
-      throw new ValidationError("Email are already taken");
+      throw new ValidationError("Email is already taken");
     }
 
     const hashedPassword = hashPassword(password);
@@ -37,7 +37,7 @@ export default function (plugin) {
       });
 
     return response(
-      undefined,
+      ctx,
       201,
       "User authenticated successfully",
       await sanitizeOutput(

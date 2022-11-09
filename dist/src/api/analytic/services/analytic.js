@@ -9,11 +9,11 @@ const date_util_1 = require("../../../utils/date.util");
 const filterData = (data, attr, type) => {
     return data.filter((d) => d[attr] == type);
 };
-const filterDataByDate = (data, type, date) => {
+const filterDataByDate = (data, date) => {
     const arr = [];
     for (const d of data) {
         const parsedDt = new Date(d.date);
-        const result = (0, date_util_1.dateFormatBytype)(`${(0, date_fns_1.format)(parsedDt, "dd")}-${(0, date_fns_1.format)(parsedDt, "MM")}-${(0, date_fns_1.format)(parsedDt, "yyyy")}`, type) === date;
+        const result = `${(0, date_fns_1.format)(parsedDt, "dd")}-${(0, date_fns_1.format)(parsedDt, "MM")}-${(0, date_fns_1.format)(parsedDt, "yyyy")}` === date;
         if (result) {
             arr.push(arr, d);
         }
@@ -28,7 +28,7 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
         const dates = (0, date_fns_1.eachDayOfInterval)({
             start: actualStartDate,
             end: actualEndDate,
-        }).map((d) => (0, date_util_1.dateFormatBytype)(`${(0, date_fns_1.format)(d, "dd")}-${(0, date_fns_1.format)(d, "MM")}-${(0, date_fns_1.format)(d, "yyyy")}`, type));
+        }).map((d) => `${(0, date_fns_1.format)(d, "dd")}-${(0, date_fns_1.format)(d, "MM")}-${(0, date_fns_1.format)(d, "yyyy")}`);
         const transactions = await strapi.entityService.findMany("api::transaction.transaction", {
             filters: {
                 date: {
@@ -47,7 +47,7 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
         }
         const transactionsByType = [];
         for (const date of dates) {
-            const transactionsByDate = filterDataByDate(transactions, "day", date);
+            const transactionsByDate = filterDataByDate(transactions, date);
             const expenseData = filterData(transactionsByDate, "transaction_type", "Expense");
             const debt = filterData(transactionsByDate, "transaction_type", "Debt/Loan");
             const income = filterData(transactionsByDate, "transaction_type", "Income");
@@ -110,8 +110,9 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
                 income: transactionsByType[transactionsByType.length - 1]["income"],
                 "debt/loan": transactionsByType[transactionsByType.length - 1]["debt/loan"],
                 expense: transactionsByType[transactionsByType.length - 1]["expense"],
+                total_transactions: transactions.length,
             },
-            transactionsAnalytics: transactionsByType,
+            transactionsAnalytics: (0, date_util_1.getDataBytype)(transactionsByType),
             walletsAnalytics: totalTransactionsBywallet,
             expensesAnalytics: totalAmountUsedByEachExpenseResult,
         };
