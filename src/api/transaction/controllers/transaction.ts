@@ -17,9 +17,10 @@ export default factories.createCoreController(
   "api::transaction.transaction",
   ({ strapi }: { strapi: any }) => ({
     async findAll(ctx) {
+      const queries = ctx.request.query;
       const entity = await strapi
         .service("api::transaction.transaction")
-        .find();
+        .find(queries);
       const data = {
         all: entity,
         income: filterData(entity, "Income"),
