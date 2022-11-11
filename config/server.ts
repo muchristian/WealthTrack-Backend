@@ -5,5 +5,6 @@ export = ({ env }) => ({
     keys: env.array("APP_KEYS"),
   },
   url: env("PUBLIC_URL", ""),
+  proxy: true,
   jwt: env("JWT_SECRET"),
 });

@@ -24,6 +24,7 @@ export default factories.createCoreService(
 
     async findMany() {
       return strapi.entityService.findMany("api::category.category", {
+        sort: { createdAt: "asc" },
         populate: {
           transaction_type: true,
         },

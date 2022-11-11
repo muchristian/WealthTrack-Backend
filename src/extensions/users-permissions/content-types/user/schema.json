@@ -66,6 +66,12 @@
     },
     "refreshToken": {
       "type": "text"
+    },
+    "categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::category.category",
+      "mappedBy": "users_permissions_user"
     }
   }
 }

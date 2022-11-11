@@ -26,11 +26,15 @@ export default factories.createCoreController(
     },
 
     async create(ctx) {
-      if (!("transaction_type" in ctx.request.body))
-        ErrorHandler(ctx, 400, "Transaction_type is missing from the request");
+      if (!("transaction_type" in ctx.request.body.data))
+        return ErrorHandler(
+          ctx,
+          400,
+          "Transaction_type is missing from the request"
+        );
       const entity = await strapi
         .service("api::category.category")
-        .create(ctx.request.body);
+        .create(ctx.request.body.data);
       return response(
         ctx,
         200,
@@ -41,6 +45,9 @@ export default factories.createCoreController(
     },
 
     async update(ctx) {
+      ctx.request.body.data = {
+        ...ctx.request.body,
+      };
       // some logic here
       const result = await super.update(ctx);
       // some more logic
