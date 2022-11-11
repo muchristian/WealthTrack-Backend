@@ -9,6 +9,10 @@ const callbackSchema = yup
   })
   .noUnknown();
 
+const validateGoogleAuthBody = yup.object({
+  email: yup.string().email().required(),
+});
+
 const registerSchema = yup.object({
   firstname: yup.string().required(),
   lastname: yup.string().required(),

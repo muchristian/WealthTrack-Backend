@@ -32,6 +32,10 @@ export default factories.createCoreController(
 
     async createTransaction(ctx) {
       const { wallet } = ctx.request.body.data;
+      ctx.request.body.data = {
+        ...ctx.request.body.data,
+        category: ctx.request.body.data.category.toLowerCase(),
+      };
       const findWallet = await strapi
         .service("api::transaction.transaction")
         .findWallet(wallet);

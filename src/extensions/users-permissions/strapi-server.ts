@@ -114,6 +114,56 @@ export default function (plugin) {
     );
   };
 
+  plugin.controllers.auth["google"] = async (ctx) => {
+    await validateGoogleAuthBody(ctx.request.body);
+    const { email } = ctx.request.body;
+    const user = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: {
+          email: email.toLowerCase(),
+        },
+      });
+    if (!user) {
+      throw new ValidationError("Invalid email or password");
+    }
+
+    const accessToken = strapi.plugins["users-permissions"].services[
+      "jwt"
+    ].issue(
+      { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+      { expiresIn: "5s" }
+    );
+
+    const refreshToken = strapi.plugins["users-permissions"].services[
+      "jwt"
+    ].issue({ id: user.id }, { expiresIn: "1y" });
+
+    await strapi.db.query("plugin::users-permissions.user").update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        refreshToken,
+      },
+    });
+
+    ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+    ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+
+    return response(
+      ctx,
+      200,
+      "User authenticated successfully",
+      await sanitizeOutput(
+        user,
+        ctx,
+        strapi.getModel("plugin::users-permissions.user")
+      ),
+      refreshToken
+    );
+  };
+
   plugin.controllers.auth["refreshToken"] = (ctx) => {
     const { refreshToken, id } = ctx.user;
     const accessToken = strapi.plugins["users-permissions"].services[
@@ -160,6 +210,16 @@ export default function (plugin) {
       },
     },
     {
+      method: "POST",
+      path: "/auth/google",
+      handler: "auth.google",
+      config: {
+        middlewares: [],
+        policies: [],
+        prefix: "",
+      },
+    },
+    {
       method: "GET",
       path: "/auth/refresh-token",
       handler: "auth.refreshToken",
@@ -180,4 +240,7 @@ export default function (plugin) {
     }
   );
   return plugin;
+}
+function validateGoogleAuthBody(body: any) {
+  throw new Error("Function not implemented.");
 }
