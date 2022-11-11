@@ -12,10 +12,11 @@ export default factories.createCoreController(
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
       const queries = ctx.request.query;
-      if (Object.keys(queries).length === 0) {
+      console.log(queries);
+      if (!("transactionType" in queries)) {
         const entity = await strapi
           .service("api::category.category")
-          .findMany();
+          .findMany(queries);
         return entity;
       } else {
         const entity = await strapi
