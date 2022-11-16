@@ -232,7 +232,7 @@ export default function (plugin) {
     },
     {
       method: "GET",
-      path: "/connect/google/callback",
+      path: "/auth/google",
       handler: "auth.google",
       config: {
         middlewares: [],
