@@ -125,6 +125,8 @@ export default function (plugin) {
       })
       .get();
 
+    console.log(grantConfig);
+
     const [requestPath] = ctx.request.url.split("?");
     const provider = requestPath.split("/")[2];
 
