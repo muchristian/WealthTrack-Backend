@@ -100,37 +100,74 @@ function default_1(plugin) {
         return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
     };
     plugin.controllers.auth["google"] = async (ctx) => {
-        await validateGoogleAuthBody(ctx.request.body);
-        const { email } = ctx.request.body;
-        const user = await strapi.db
-            .query("plugin::users-permissions.user")
-            .findOne({
-            where: {
-                email: email.toLowerCase(),
-            },
-        });
-        if (!user) {
-            throw new ValidationError("Invalid email or password");
-        }
-        const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5s" });
-        const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id }, { expiresIn: "1y" });
-        await strapi.db.query("plugin::users-permissions.user").update({
-            where: {
-                id: user.id,
-            },
-            data: {
-                refreshToken,
-            },
-        });
-        ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-        ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
-        return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
+        console.log(ctx.request.query);
+        // await validateGoogleAuthBody(ctx.request.body);
+        // const { email } = ctx.request.body;
+        // const user = await strapi.db
+        //   .query("plugin::users-permissions.user")
+        //   .findOne({
+        //     where: {
+        //       email: email.toLowerCase(),
+        //     },
+        //   });
+        // if (!user) {
+        //   throw new ValidationError("Invalid email");
+        // }
+        // const accessToken = strapi.plugins["users-permissions"].services[
+        //   "jwt"
+        // ].issue(
+        //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+        //   { expiresIn: "5s" }
+        // );
+        // const refreshToken = strapi.plugins["users-permissions"].services[
+        //   "jwt"
+        // ].issue({ id: user.id }, { expiresIn: "1y" });
+        // await strapi.db.query("plugin::users-permissions.user").update({
+        //   where: {
+        //     id: user.id,
+        //   },
+        //   data: {
+        //     refreshToken,
+        //   },
+        // });
+        // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+        // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+        // return response(
+        //   ctx,
+        //   200,
+        //   "User authenticated successfully",
+        //   await sanitizeOutput(
+        //     user,
+        //     ctx,
+        //     strapi.getModel("plugin::users-permissions.user")
+        //   ),
+        //   refreshToken
+        // );
     };
     plugin.controllers.auth["refreshToken"] = (ctx) => {
+        console.log(ctx.user);
         const { refreshToken, id } = ctx.user;
         const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: id, ...lodash_1.default.pick(ctx.user, ["firstname", "lastname", "email"]) }, { expiresIn: "5s" });
         ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
         return (0, response_1.response)(ctx, 200, "Access token has been refreshed successfully", undefined, refreshToken);
+    };
+    plugin.controllers.auth["logout"] = (ctx) => {
+        console.log(ctx.user);
+        // const { refreshToken, id } = ctx.user;
+        // const accessToken = strapi.plugins["users-permissions"].services[
+        //   "jwt"
+        // ].issue(
+        //   { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
+        //   { expiresIn: "5s" }
+        // );
+        // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+        // return response(
+        //   ctx,
+        //   200,
+        //   "Access token has been refreshed successfully",
+        //   undefined,
+        //   refreshToken
+        // );
     };
     plugin.controllers.user["find"] = async (ctx) => {
         return "fdafdsa";
@@ -167,6 +204,15 @@ function default_1(plugin) {
         method: "GET",
         path: "/auth/refresh-token",
         handler: "auth.refreshToken",
+        config: {
+            middlewares: ["plugin::users-permissions.refresh"],
+            policies: [],
+            prefix: "",
+        },
+    }, {
+        method: "GET",
+        path: "/auth/logout",
+        handler: "auth.logout",
         config: {
             middlewares: ["plugin::users-permissions.access"],
             policies: [],

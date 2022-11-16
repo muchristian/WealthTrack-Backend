@@ -11,7 +11,9 @@ export const generateToken = (data, expire = "5m") => {
 };
 export const verifyToken = (token) => {
   try {
+    console.log(token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log(decoded);
     return { payload: decoded, expired: false };
   } catch (error) {
     return { payload: null, expired: error.message.includes("jwt expired") };
