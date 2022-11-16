@@ -188,7 +188,7 @@ export default function (plugin) {
     // );
   };
 
-  plugin.controller.auth["google"] = (ctx) => {
+  plugin.controllers.auth["google"] = async (ctx) => {
     console.log(ctx);
     console.log(ctx.request.query);
   };

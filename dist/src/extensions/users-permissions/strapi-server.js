@@ -33,6 +33,7 @@ const sanitize_1 = require("./utils/sanitize");
 const response_1 = require("../../utils/response");
 const middlewares = __importStar(require("../../middlewares/auth"));
 const lodash_1 = __importDefault(require("lodash"));
+const grant_koa_1 = __importDefault(require("grant-koa"));
 const { validateLoginBody, validateRegisterBody } = validations.default;
 const { ApplicationError, ValidationError } = utils_1.default.errors;
 function default_1(plugin) {
@@ -99,8 +100,27 @@ function default_1(plugin) {
         ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
         return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
     };
-    plugin.controllers.auth["google"] = async (ctx) => {
-        console.log(ctx.request.query);
+    plugin.controllers.auth["connect"] = async (ctx, next) => {
+        const grantConfig = await strapi
+            .store({
+            environment: "",
+            type: "plugin",
+            name: "users-permissions",
+            key: "grant",
+        })
+            .get();
+        const [requestPath] = ctx.request.url.split("?");
+        const provider = requestPath.split("/")[2];
+        if (!lodash_1.default.get(grantConfig[provider], "enabled")) {
+            return ctx.badRequest(null, "This provider is disabled.");
+        }
+        // Ability to pass OAuth callback dynamically
+        grantConfig[provider].callback =
+            lodash_1.default.get(ctx, "query.callback") || grantConfig[provider].callback;
+        grantConfig[provider].redirect_uri =
+            grantConfig[provider].redirect_uri ||
+                `${strapi.config.server.url}/auth/${provider}`;
+        return (0, grant_koa_1.default)(grantConfig)(ctx, next);
         // await validateGoogleAuthBody(ctx.request.body);
         // const { email } = ctx.request.body;
         // const user = await strapi.db
@@ -143,6 +163,10 @@ function default_1(plugin) {
         //   ),
         //   refreshToken
         // );
+    };
+    plugin.controllers.auth["google"] = async (ctx) => {
+        console.log(ctx);
+        console.log(ctx.request.query);
     };
     plugin.controllers.auth["refreshToken"] = (ctx) => {
         console.log(ctx.user);
@@ -192,7 +216,16 @@ function default_1(plugin) {
             prefix: "",
         },
     }, {
-        method: "POST",
+        method: "GET",
+        path: "/auth/connect/(.*)",
+        handler: "auth.connect",
+        config: {
+            middlewares: [],
+            policies: [],
+            prefix: "",
+        },
+    }, {
+        method: "GET",
         path: "/auth/google",
         handler: "auth.google",
         config: {
