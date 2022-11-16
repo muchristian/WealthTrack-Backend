@@ -16,6 +16,7 @@
     "@strapi/strapi": "4.3.4",
     "better-sqlite3": "7.4.6",
     "date-fns": "^2.29.3",
+    "grant-koa": "^5.4.8",
     "koa": "^2.13.4",
     "parse-database-url": "^0.3.0",
     "pg": "^8.7.3",

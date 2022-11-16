@@ -5,6 +5,7 @@ import { sanitizeOutput } from "./utils/sanitize";
 import { response } from "../../utils/response";
 import * as middlewares from "../../middlewares/auth";
 import _ from "lodash";
+import grant from "grant-koa";
 
 const { validateLoginBody, validateRegisterBody } = validations.default;
 const { ApplicationError, ValidationError } = utils.errors;
@@ -114,8 +115,30 @@ export default function (plugin) {
     );
   };
 
-  plugin.controllers.auth["connect"] = async (ctx) => {
-    console.log(ctx.request.query);
+  plugin.controllers.auth["connect"] = async (ctx, next) => {
+    const grantConfig = await strapi
+      .store({
+        environment: "",
+        type: "plugin",
+        name: "users-permissions",
+        key: "grant",
+      })
+      .get();
+
+    const [requestPath] = ctx.request.url.split("?");
+    const provider = requestPath.split("/")[2];
+
+    if (!_.get(grantConfig[provider], "enabled")) {
+      return ctx.badRequest(null, "This provider is disabled.");
+    }
+    // Ability to pass OAuth callback dynamically
+    grantConfig[provider].callback =
+      _.get(ctx, "query.callback") || grantConfig[provider].callback;
+    grantConfig[provider].redirect_uri =
+      grantConfig[provider].redirect_uri ||
+      `${strapi.config.server.url}/auth/${provider}`;
+
+    return grant(grantConfig)(ctx, next);
     // await validateGoogleAuthBody(ctx.request.body);
     // const { email } = ctx.request.body;
     // const user = await strapi.db
@@ -163,6 +186,11 @@ export default function (plugin) {
     //   ),
     //   refreshToken
     // );
+  };
+
+  plugin.controller.auth["google"] = (ctx) => {
+    console.log(ctx);
+    console.log(ctx.request.query);
   };
 
   plugin.controllers.auth["refreshToken"] = (ctx) => {
@@ -232,8 +260,18 @@ export default function (plugin) {
     },
     {
       method: "GET",
-      path: "/auth/google",
+      path: "/auth/connect/(.*)",
       handler: "auth.connect",
+      config: {
+        middlewares: [],
+        policies: [],
+        prefix: "",
+      },
+    },
+    {
+      method: "GET",
+      path: "/auth/google",
+      handler: "auth.google",
       config: {
         middlewares: [],
         policies: [],
