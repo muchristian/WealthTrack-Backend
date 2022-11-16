@@ -7,7 +7,7 @@ export = ({ env }) => ({
   url: env("PUBLIC_URL", ""),
   proxy: true,
   jwt: env("JWT_SECRET"),
-  facebook: {
+  google: {
     redirect_uri: `${env("PUBLIC_URL", "")}/api/auth/google`,
   },
 });
