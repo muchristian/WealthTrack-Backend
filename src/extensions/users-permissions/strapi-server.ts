@@ -231,8 +231,8 @@ export default function (plugin) {
       },
     },
     {
-      method: "POST",
-      path: "/auth/google",
+      method: "GET",
+      path: "/connect/google/callback",
       handler: "auth.google",
       config: {
         middlewares: [],
