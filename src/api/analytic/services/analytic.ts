@@ -3,7 +3,7 @@
  */
 
 import { factories } from "@strapi/strapi";
-import { eachDayOfInterval, format } from "date-fns";
+import { eachDayOfInterval, eachMonthOfInterval, format } from "date-fns";
 import Koa from "koa";
 import {
   getDataBytype,
@@ -15,15 +15,18 @@ const filterData = (data, attr, type) => {
   return data.filter((d) => d[attr] == type);
 };
 
-const filterDataByDate = (data, date) => {
+const filterDataByDate = (data, date, type) => {
   const arr = [];
   for (const d of data) {
     const parsedDt = new Date(d.date);
-    const result =
-      `${format(parsedDt, "dd")}-${format(parsedDt, "MM")}-${format(
-        parsedDt,
-        "yyyy"
-      )}` === date;
+    const dateFormat =
+      type !== "year"
+        ? `${format(parsedDt, "dd")}-${format(parsedDt, "MM")}-${format(
+            parsedDt,
+            "yyyy"
+          )}`
+        : `${format(parsedDt, "MM")}-${format(parsedDt, "yyyy")}`;
+    const result = dateFormat === date;
 
     if (result) {
       arr.push(arr, d);
@@ -48,12 +51,20 @@ export default factories.createCoreService(
         parseDate(ctx, filter.dateTo)
       );
 
-      const dates = eachDayOfInterval({
-        start: actualStartDate,
-        end: actualEndDate,
-      }).map(
-        (d) => `${format(d, "dd")}-${format(d, "MM")}-${format(d, "yyyy")}`
-      );
+      let dates;
+      if (type !== "year") {
+        dates = eachDayOfInterval({
+          start: actualStartDate,
+          end: actualEndDate,
+        }).map(
+          (d) => `${format(d, "dd")}-${format(d, "MM")}-${format(d, "yyyy")}`
+        );
+      } else {
+        dates = eachMonthOfInterval({
+          start: actualStartDate,
+          end: actualEndDate,
+        }).map((d) => `${format(d, "MM")}-${format(d, "yyyy")}`);
+      }
       const transactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
         {
@@ -80,7 +91,7 @@ export default factories.createCoreService(
 
       const transactionsByType = [];
       for (const date of dates) {
-        const transactionsByDate = filterDataByDate(transactions, date);
+        const transactionsByDate = filterDataByDate(transactions, date, type);
         const expenseData = filterData(
           transactionsByDate,
           "transaction_type",

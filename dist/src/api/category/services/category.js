@@ -8,12 +8,10 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
     async find(queries) {
         const { transactionType } = queries;
         return strapi.entityService.findMany("api::category.category", {
-            populate: {
+            filters: {
                 transaction_type: {
-                    filters: {
-                        name: {
-                            $eq: transactionType,
-                        },
+                    name: {
+                        $eq: transactionType,
                     },
                 },
             },
@@ -24,11 +22,11 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
         console.log(user);
         return strapi.entityService.findMany("api::category.category", {
             sort: { createdAt: "asc" },
-            filter: {
-                users_permissions_user: user,
-            },
             populate: {
                 transaction_type: true,
+            },
+            filters: {
+                users_permissions_user: { id: user },
             },
         });
     },
