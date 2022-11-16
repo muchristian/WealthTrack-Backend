@@ -114,7 +114,7 @@ export default function (plugin) {
     );
   };
 
-  plugin.controllers.auth["google"] = async (ctx) => {
+  plugin.controllers.auth["connect"] = async (ctx) => {
     console.log(ctx.request.query);
     // await validateGoogleAuthBody(ctx.request.body);
     // const { email } = ctx.request.body;
@@ -233,7 +233,7 @@ export default function (plugin) {
     {
       method: "GET",
       path: "/auth/google",
-      handler: "auth.google",
+      handler: "auth.connect",
       config: {
         middlewares: [],
         policies: [],
