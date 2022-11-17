@@ -83,7 +83,7 @@ export default function (plugin) {
       "jwt"
     ].issue(
       { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
-      { expiresIn: "5s" }
+      { expiresIn: "5m" }
     );
 
     const refreshToken = strapi.plugins["users-permissions"].services[
@@ -212,8 +212,9 @@ export default function (plugin) {
       "jwt"
     ].issue(
       { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
-      { expiresIn: "5s" }
+      { expiresIn: "5m" }
     );
+    console.log(accessToken);
     ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
     return response(
       ctx,
@@ -224,23 +225,26 @@ export default function (plugin) {
     );
   };
 
-  plugin.controllers.auth["logout"] = (ctx) => {
+  plugin.controllers.auth["logout"] = async (ctx) => {
     console.log(ctx.user);
-    // const { refreshToken, id } = ctx.user;
-    // const accessToken = strapi.plugins["users-permissions"].services[
-    //   "jwt"
-    // ].issue(
-    //   { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
-    //   { expiresIn: "5s" }
-    // );
-    // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-    // return response(
-    //   ctx,
-    //   200,
-    //   "Access token has been refreshed successfully",
-    //   undefined,
-    //   refreshToken
-    // );
+    const { id } = ctx.user;
+    await strapi.db.query("plugin::users-permissions.user").update({
+      where: {
+        id,
+      },
+      data: {
+        refreshToken: "",
+      },
+    });
+    ctx.cookies.set("accessToken");
+    ctx.cookies.set("refreshToken");
+    return response(
+      ctx,
+      200,
+      "You successfully loggedout",
+      undefined,
+      undefined
+    );
   };
 
   plugin.controllers.user["find"] = async (ctx) => {

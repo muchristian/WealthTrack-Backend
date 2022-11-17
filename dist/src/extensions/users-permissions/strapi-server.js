@@ -33,7 +33,6 @@ const sanitize_1 = require("./utils/sanitize");
 const response_1 = require("../../utils/response");
 const middlewares = __importStar(require("../../middlewares/auth"));
 const lodash_1 = __importDefault(require("lodash"));
-const grant_koa_1 = __importDefault(require("grant-koa"));
 const { validateLoginBody, validateRegisterBody } = validations.default;
 const { ApplicationError, ValidationError } = utils_1.default.errors;
 function default_1(plugin) {
@@ -86,7 +85,7 @@ function default_1(plugin) {
         if (user.blocked === true) {
             throw new ApplicationError("Your account has been blocked by an administrator");
         }
-        const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5s" });
+        const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5m" });
         const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id }, { expiresIn: "1y" });
         await strapi.db.query("plugin::users-permissions.user").update({
             where: {
@@ -100,75 +99,79 @@ function default_1(plugin) {
         ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
         return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
     };
-    plugin.controllers.auth["connect"] = async (ctx, next) => {
-        const providers = await strapi
-            .store({ type: "plugin", name: "users-permissions", key: "grant" })
-            .get();
-        const apiPrefix = strapi.config.get("api.rest.prefix");
-        const grantConfig = {
-            defaults: {
-                prefix: `${apiPrefix}/connect`,
-            },
-            ...providers,
-        };
-        const [requestPath] = ctx.request.url.split("?");
-        const provider = requestPath.split("/connect/")[1].split("/")[0];
-        if (!lodash_1.default.get(grantConfig[provider], "enabled")) {
-            throw new ApplicationError("This provider is disabled");
-        }
-        if (!strapi.config.server.url.startsWith("http")) {
-            strapi.log.warn("You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url");
-        }
-        // Ability to pass OAuth callback dynamically
-        grantConfig[provider].callback =
-            lodash_1.default.get(ctx, "query.callback") ||
-                lodash_1.default.get(ctx, "session.grant.dynamic.callback") ||
-                grantConfig[provider].callback;
-        grantConfig[provider].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
-        return (0, grant_koa_1.default)(grantConfig)(ctx, next);
-        // await validateGoogleAuthBody(ctx.request.body);
-        // const { email } = ctx.request.body;
-        // const user = await strapi.db
-        //   .query("plugin::users-permissions.user")
-        //   .findOne({
-        //     where: {
-        //       email: email.toLowerCase(),
-        //     },
-        //   });
-        // if (!user) {
-        //   throw new ValidationError("Invalid email");
-        // }
-        // const accessToken = strapi.plugins["users-permissions"].services[
-        //   "jwt"
-        // ].issue(
-        //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
-        //   { expiresIn: "5s" }
-        // );
-        // const refreshToken = strapi.plugins["users-permissions"].services[
-        //   "jwt"
-        // ].issue({ id: user.id }, { expiresIn: "1y" });
-        // await strapi.db.query("plugin::users-permissions.user").update({
-        //   where: {
-        //     id: user.id,
-        //   },
-        //   data: {
-        //     refreshToken,
-        //   },
-        // });
-        // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-        // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
-        // return response(
-        //   ctx,
-        //   200,
-        //   "User authenticated successfully",
-        //   await sanitizeOutput(
-        //     user,
-        //     ctx,
-        //     strapi.getModel("plugin::users-permissions.user")
-        //   ),
-        //   refreshToken
-        // );
-    };
+    // plugin.controllers.auth["connect"] = async (ctx, next) => {
+    //   const providers = await strapi
+    //     .store({ type: "plugin", name: "users-permissions", key: "grant" })
+    //     .get();
+    //   const apiPrefix = strapi.config.get("api.rest.prefix");
+    //   const grantConfig = {
+    //     defaults: {
+    //       prefix: `${apiPrefix}/connect`,
+    //     },
+    //     ...providers,
+    //   };
+    //   const [requestPath] = ctx.request.url.split("?");
+    //   const provider = requestPath.split("/connect/")[1].split("/")[0];
+    //   if (!_.get(grantConfig[provider], "enabled")) {
+    //     throw new ApplicationError("This provider is disabled");
+    //   }
+    //   if (!strapi.config.server.url.startsWith("http")) {
+    //     strapi.log.warn(
+    //       "You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url"
+    //     );
+    //   }
+    //   // Ability to pass OAuth callback dynamically
+    //   grantConfig[provider].callback =
+    //     _.get(ctx, "query.callback") ||
+    //     _.get(ctx, "session.grant.dynamic.callback") ||
+    //     grantConfig[provider].callback;
+    //   grantConfig[
+    //     provider
+    //   ].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
+    //   return grant(grantConfig)(ctx, next);
+    //   // await validateGoogleAuthBody(ctx.request.body);
+    //   // const { email } = ctx.request.body;
+    //   // const user = await strapi.db
+    //   //   .query("plugin::users-permissions.user")
+    //   //   .findOne({
+    //   //     where: {
+    //   //       email: email.toLowerCase(),
+    //   //     },
+    //   //   });
+    //   // if (!user) {
+    //   //   throw new ValidationError("Invalid email");
+    //   // }
+    //   // const accessToken = strapi.plugins["users-permissions"].services[
+    //   //   "jwt"
+    //   // ].issue(
+    //   //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+    //   //   { expiresIn: "5s" }
+    //   // );
+    //   // const refreshToken = strapi.plugins["users-permissions"].services[
+    //   //   "jwt"
+    //   // ].issue({ id: user.id }, { expiresIn: "1y" });
+    //   // await strapi.db.query("plugin::users-permissions.user").update({
+    //   //   where: {
+    //   //     id: user.id,
+    //   //   },
+    //   //   data: {
+    //   //     refreshToken,
+    //   //   },
+    //   // });
+    //   // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+    //   // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+    //   // return response(
+    //   //   ctx,
+    //   //   200,
+    //   //   "User authenticated successfully",
+    //   //   await sanitizeOutput(
+    //   //     user,
+    //   //     ctx,
+    //   //     strapi.getModel("plugin::users-permissions.user")
+    //   //   ),
+    //   //   refreshToken
+    //   // );
+    // };
     plugin.controllers.auth["google"] = async (ctx) => {
         console.log(ctx);
         console.log(ctx.request.query);
@@ -176,27 +179,25 @@ function default_1(plugin) {
     plugin.controllers.auth["refreshToken"] = (ctx) => {
         console.log(ctx.user);
         const { refreshToken, id } = ctx.user;
-        const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: id, ...lodash_1.default.pick(ctx.user, ["firstname", "lastname", "email"]) }, { expiresIn: "5s" });
+        const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: id, ...lodash_1.default.pick(ctx.user, ["firstname", "lastname", "email"]) }, { expiresIn: "5m" });
+        console.log(accessToken);
         ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
         return (0, response_1.response)(ctx, 200, "Access token has been refreshed successfully", undefined, refreshToken);
     };
-    plugin.controllers.auth["logout"] = (ctx) => {
+    plugin.controllers.auth["logout"] = async (ctx) => {
         console.log(ctx.user);
-        // const { refreshToken, id } = ctx.user;
-        // const accessToken = strapi.plugins["users-permissions"].services[
-        //   "jwt"
-        // ].issue(
-        //   { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
-        //   { expiresIn: "5s" }
-        // );
-        // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-        // return response(
-        //   ctx,
-        //   200,
-        //   "Access token has been refreshed successfully",
-        //   undefined,
-        //   refreshToken
-        // );
+        const { id } = ctx.user;
+        await strapi.db.query("plugin::users-permissions.user").update({
+            where: {
+                id,
+            },
+            data: {
+                refreshToken: "",
+            },
+        });
+        ctx.cookies.set("accessToken");
+        ctx.cookies.set("refreshToken");
+        return (0, response_1.response)(ctx, 200, "Access token has been refreshed successfully", undefined, undefined);
     };
     plugin.controllers.user["find"] = async (ctx) => {
         return "fdafdsa";
@@ -222,16 +223,7 @@ function default_1(plugin) {
         },
     }, {
         method: "GET",
-        path: "/auth/connect/(.*)",
-        handler: "auth.connect",
-        config: {
-            middlewares: [],
-            policies: [],
-            prefix: "",
-        },
-    }, {
-        method: "GET",
-        path: "/auth/google",
+        path: "/api/connect/google/callback",
         handler: "auth.google",
         config: {
             middlewares: [],

@@ -8,12 +8,7 @@ const { ValidationError } = utils.errors;
 export const access = (options, { strapi }) => {
   return async (ctx, next) => {
     const accessToken = ctx.cookies.get("accessToken");
-    console.log("------");
-    console.log(accessToken);
-    console.log("-----");
     const { payload, expired } = authUtils.verifyToken(accessToken);
-    console.log(payload);
-    console.log(expired);
     if (!payload || expired) {
       return ErrorHandler(ctx, 401, "Unauthorized");
     }
@@ -36,7 +31,6 @@ export const access = (options, { strapi }) => {
 export const refresh = (options, { strapi }) => {
   return async (ctx, next) => {
     const refreshToken = ctx.cookies.get("refreshToken");
-    console.log(refreshToken);
     const isRefreshTokenExist = await strapi.db
       .query("plugin::users-permissions.user")
       .findOne({
