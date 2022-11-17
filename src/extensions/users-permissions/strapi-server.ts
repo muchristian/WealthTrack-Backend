@@ -128,7 +128,7 @@ export default function (plugin) {
     console.log(grantConfig);
 
     const [requestPath] = ctx.request.url.split("?");
-    const provider = requestPath.split("/")[2];
+    const provider = requestPath.split("/")[4];
 
     if (!_.get(grantConfig[provider], "enabled")) {
       return ctx.badRequest(null, "This provider is disabled.");

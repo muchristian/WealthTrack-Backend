@@ -8,4 +8,7 @@ module.exports = ({ env }) => ({
     url: env("PUBLIC_URL", ""),
     proxy: true,
     jwt: env("JWT_SECRET"),
+    google: {
+        redirect_uri: `${env("PUBLIC_URL", "")}/api/auth/google`,
+    },
 });

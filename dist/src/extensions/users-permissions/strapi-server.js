@@ -109,8 +109,11 @@ function default_1(plugin) {
             key: "grant",
         })
             .get();
+        console.log(grantConfig);
         const [requestPath] = ctx.request.url.split("?");
-        const provider = requestPath.split("/")[2];
+        console.log(requestPath);
+        const provider = requestPath.split("/")[4];
+        console.log(provider);
         if (!lodash_1.default.get(grantConfig[provider], "enabled")) {
             return ctx.badRequest(null, "This provider is disabled.");
         }
