@@ -26,7 +26,7 @@ const filterDataByDate = (data, date, type) => {
 };
 exports.default = strapi_1.factories.createCoreService("api::analytic.analytic", ({ strapi }) => ({
     async find(functions) {
-        const { ctx, filter, type } = functions;
+        const { ctx, filter, type, user } = functions;
         const { actualStartDate, actualEndDate } = (0, date_util_1.getActualDateRange)(ctx, (0, date_util_1.parseDate)(ctx, filter.dateFrom), (0, date_util_1.parseDate)(ctx, filter.dateTo));
         let dates;
         if (type !== "year") {
@@ -41,11 +41,13 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
                 end: actualEndDate,
             }).map((d) => `${(0, date_fns_1.format)(d, "MM")}-${(0, date_fns_1.format)(d, "yyyy")}`);
         }
+        console.log("ddsa", user);
         const transactions = await strapi.entityService.findMany("api::transaction.transaction", {
             filters: {
                 date: {
                     $between: [actualStartDate, actualEndDate],
                 },
+                users_id: { id: user },
             },
         });
         const transactionsObj = {

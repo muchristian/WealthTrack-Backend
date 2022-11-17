@@ -16,7 +16,6 @@ const generateToken = (data, expire = "5m") => {
 exports.generateToken = generateToken;
 const verifyToken = (token) => {
     try {
-        console.log(process.env.JWT_SECRET);
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
         return { payload: decoded, expired: false };
     }

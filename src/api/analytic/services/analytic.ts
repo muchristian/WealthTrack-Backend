@@ -43,8 +43,9 @@ export default factories.createCoreService(
       ctx: Koa.context;
       filter: { dateFrom: string; dateTo: string };
       type: string;
+      user: number;
     }) {
-      const { ctx, filter, type } = functions;
+      const { ctx, filter, type, user } = functions;
       const { actualStartDate, actualEndDate } = getActualDateRange(
         ctx,
         parseDate(ctx, filter.dateFrom),
@@ -65,6 +66,7 @@ export default factories.createCoreService(
           end: actualEndDate,
         }).map((d) => `${format(d, "MM")}-${format(d, "yyyy")}`);
       }
+      console.log("ddsa", user);
       const transactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
         {
@@ -72,6 +74,7 @@ export default factories.createCoreService(
             date: {
               $between: [actualStartDate, actualEndDate],
             },
+            users_id: { id: user },
           },
         }
       );

@@ -13,10 +13,16 @@ exports.default = strapi_1.factories.createCoreController("api::analytic.analyti
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
         const queries = ctx.request.query;
-        const { type } = queries;
+        console.log(queries);
+        const { type, user } = queries;
         const entity = await strapi
             .service("api::analytic.analytic")
-            .find({ ctx, filter: lodash_1.default.pick(queries, ["dateFrom", "dateTo"]), type });
+            .find({
+            ctx,
+            filter: lodash_1.default.pick(queries, ["dateFrom", "dateTo"]),
+            type,
+            user,
+        });
         return (0, response_1.response)(ctx, 200, undefined, entity, undefined);
     },
 }));

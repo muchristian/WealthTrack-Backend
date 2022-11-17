@@ -86,7 +86,7 @@ function default_1(plugin) {
             throw new ApplicationError("Your account has been blocked by an administrator");
         }
         const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5m" });
-        const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id }, { expiresIn: "1y" });
+        const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "1y" });
         await strapi.db.query("plugin::users-permissions.user").update({
             where: {
                 id: user.id,
@@ -197,7 +197,7 @@ function default_1(plugin) {
         });
         ctx.cookies.set("accessToken");
         ctx.cookies.set("refreshToken");
-        return (0, response_1.response)(ctx, 200, "Access token has been refreshed successfully", undefined, undefined);
+        return (0, response_1.response)(ctx, 200, "You successfully logged out", undefined, undefined);
     };
     plugin.controllers.user["find"] = async (ctx) => {
         return "fdafdsa";

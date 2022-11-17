@@ -88,7 +88,10 @@ export default function (plugin) {
 
     const refreshToken = strapi.plugins["users-permissions"].services[
       "jwt"
-    ].issue({ id: user.id }, { expiresIn: "1y" });
+    ].issue(
+      { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+      { expiresIn: "1y" }
+    );
 
     await strapi.db.query("plugin::users-permissions.user").update({
       where: {
@@ -241,7 +244,7 @@ export default function (plugin) {
     return response(
       ctx,
       200,
-      "You successfully loggedout",
+      "You successfully logged out",
       undefined,
       undefined
     );

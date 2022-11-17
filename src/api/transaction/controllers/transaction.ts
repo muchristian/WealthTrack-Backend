@@ -21,6 +21,7 @@ export default factories.createCoreController(
       const entity = await strapi
         .service("api::transaction.transaction")
         .find(queries);
+      console.log(entity);
       const data = {
         all: entity,
         income: filterData(entity, "Income"),

@@ -3,6 +3,7 @@
  */
 
 import { factories } from "@strapi/strapi";
+import { access } from "../../../middlewares/auth";
 
 const analyticRoutes = {
   routes: [

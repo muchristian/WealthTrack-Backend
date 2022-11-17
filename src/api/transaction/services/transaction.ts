@@ -10,7 +10,7 @@ export default factories.createCoreService(
   "api::transaction.transaction",
   ({ strapi }) => ({
     async find(filter: any) {
-      const { dateFrom, dateTo, search } = filter;
+      const { dateFrom, dateTo, search, user } = filter;
       let searchQuery = {};
       console.log(search);
       if (search)
@@ -19,12 +19,14 @@ export default factories.createCoreService(
             $containsi: search,
           },
         };
+      console.log("dd", user);
       return strapi.entityService.findMany("api::transaction.transaction", {
         filters: {
           ...searchQuery,
           date: {
             $between: [dateFrom, dateTo],
           },
+          users_id: { id: user },
         },
       });
     },

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const strapi_1 = require("@strapi/strapi");
 exports.default = strapi_1.factories.createCoreService("api::transaction.transaction", ({ strapi }) => ({
     async find(filter) {
-        const { dateFrom, dateTo, search } = filter;
+        const { dateFrom, dateTo, search, user } = filter;
         let searchQuery = {};
         console.log(search);
         if (search)
@@ -15,12 +15,14 @@ exports.default = strapi_1.factories.createCoreService("api::transaction.transac
                     $containsi: search,
                 },
             };
+        console.log("dd", user);
         return strapi.entityService.findMany("api::transaction.transaction", {
             filters: {
                 ...searchQuery,
                 date: {
                     $between: [dateFrom, dateTo],
                 },
+                users_id: { id: user },
             },
         });
     },
