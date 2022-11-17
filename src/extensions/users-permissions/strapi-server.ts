@@ -115,90 +115,90 @@ export default function (plugin) {
     );
   };
 
-  plugin.controllers.auth["connect"] = async (ctx, next) => {
-    const providers = await strapi
-      .store({ type: "plugin", name: "users-permissions", key: "grant" })
-      .get();
+  // plugin.controllers.auth["connect"] = async (ctx, next) => {
+  //   const providers = await strapi
+  //     .store({ type: "plugin", name: "users-permissions", key: "grant" })
+  //     .get();
 
-    const apiPrefix = strapi.config.get("api.rest.prefix");
-    const grantConfig = {
-      defaults: {
-        prefix: `${apiPrefix}/connect`,
-      },
-      ...providers,
-    };
+  //   const apiPrefix = strapi.config.get("api.rest.prefix");
+  //   const grantConfig = {
+  //     defaults: {
+  //       prefix: `${apiPrefix}/connect`,
+  //     },
+  //     ...providers,
+  //   };
 
-    const [requestPath] = ctx.request.url.split("?");
-    const provider = requestPath.split("/connect/")[1].split("/")[0];
+  //   const [requestPath] = ctx.request.url.split("?");
+  //   const provider = requestPath.split("/connect/")[1].split("/")[0];
 
-    if (!_.get(grantConfig[provider], "enabled")) {
-      throw new ApplicationError("This provider is disabled");
-    }
+  //   if (!_.get(grantConfig[provider], "enabled")) {
+  //     throw new ApplicationError("This provider is disabled");
+  //   }
 
-    if (!strapi.config.server.url.startsWith("http")) {
-      strapi.log.warn(
-        "You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url"
-      );
-    }
+  //   if (!strapi.config.server.url.startsWith("http")) {
+  //     strapi.log.warn(
+  //       "You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url"
+  //     );
+  //   }
 
-    // Ability to pass OAuth callback dynamically
-    grantConfig[provider].callback =
-      _.get(ctx, "query.callback") ||
-      _.get(ctx, "session.grant.dynamic.callback") ||
-      grantConfig[provider].callback;
-    grantConfig[
-      provider
-    ].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
+  //   // Ability to pass OAuth callback dynamically
+  //   grantConfig[provider].callback =
+  //     _.get(ctx, "query.callback") ||
+  //     _.get(ctx, "session.grant.dynamic.callback") ||
+  //     grantConfig[provider].callback;
+  //   grantConfig[
+  //     provider
+  //   ].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
 
-    return grant(grantConfig)(ctx, next);
-    // await validateGoogleAuthBody(ctx.request.body);
-    // const { email } = ctx.request.body;
-    // const user = await strapi.db
-    //   .query("plugin::users-permissions.user")
-    //   .findOne({
-    //     where: {
-    //       email: email.toLowerCase(),
-    //     },
-    //   });
-    // if (!user) {
-    //   throw new ValidationError("Invalid email");
-    // }
+  //   return grant(grantConfig)(ctx, next);
+  //   // await validateGoogleAuthBody(ctx.request.body);
+  //   // const { email } = ctx.request.body;
+  //   // const user = await strapi.db
+  //   //   .query("plugin::users-permissions.user")
+  //   //   .findOne({
+  //   //     where: {
+  //   //       email: email.toLowerCase(),
+  //   //     },
+  //   //   });
+  //   // if (!user) {
+  //   //   throw new ValidationError("Invalid email");
+  //   // }
 
-    // const accessToken = strapi.plugins["users-permissions"].services[
-    //   "jwt"
-    // ].issue(
-    //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
-    //   { expiresIn: "5s" }
-    // );
+  //   // const accessToken = strapi.plugins["users-permissions"].services[
+  //   //   "jwt"
+  //   // ].issue(
+  //   //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+  //   //   { expiresIn: "5s" }
+  //   // );
 
-    // const refreshToken = strapi.plugins["users-permissions"].services[
-    //   "jwt"
-    // ].issue({ id: user.id }, { expiresIn: "1y" });
+  //   // const refreshToken = strapi.plugins["users-permissions"].services[
+  //   //   "jwt"
+  //   // ].issue({ id: user.id }, { expiresIn: "1y" });
 
-    // await strapi.db.query("plugin::users-permissions.user").update({
-    //   where: {
-    //     id: user.id,
-    //   },
-    //   data: {
-    //     refreshToken,
-    //   },
-    // });
+  //   // await strapi.db.query("plugin::users-permissions.user").update({
+  //   //   where: {
+  //   //     id: user.id,
+  //   //   },
+  //   //   data: {
+  //   //     refreshToken,
+  //   //   },
+  //   // });
 
-    // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-    // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+  //   // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+  //   // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
 
-    // return response(
-    //   ctx,
-    //   200,
-    //   "User authenticated successfully",
-    //   await sanitizeOutput(
-    //     user,
-    //     ctx,
-    //     strapi.getModel("plugin::users-permissions.user")
-    //   ),
-    //   refreshToken
-    // );
-  };
+  //   // return response(
+  //   //   ctx,
+  //   //   200,
+  //   //   "User authenticated successfully",
+  //   //   await sanitizeOutput(
+  //   //     user,
+  //   //     ctx,
+  //   //     strapi.getModel("plugin::users-permissions.user")
+  //   //   ),
+  //   //   refreshToken
+  //   // );
+  // };
 
   plugin.controllers.auth["google"] = async (ctx) => {
     console.log(ctx);
@@ -272,17 +272,7 @@ export default function (plugin) {
     },
     {
       method: "GET",
-      path: "/auth/connect/(.*)",
-      handler: "auth.connect",
-      config: {
-        middlewares: [],
-        policies: [],
-        prefix: "",
-      },
-    },
-    {
-      method: "GET",
-      path: "/auth/google",
+      path: "/api/connect/google/callback",
       handler: "auth.google",
       config: {
         middlewares: [],
