@@ -101,28 +101,30 @@ function default_1(plugin) {
         return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
     };
     plugin.controllers.auth["connect"] = async (ctx, next) => {
-        const grantConfig = await strapi
-            .store({
-            environment: "",
-            type: "plugin",
-            name: "users-permissions",
-            key: "grant",
-        })
+        const providers = await strapi
+            .store({ type: "plugin", name: "users-permissions", key: "grant" })
             .get();
-        console.log(grantConfig);
+        const apiPrefix = strapi.config.get("api.rest.prefix");
+        const grantConfig = {
+            defaults: {
+                prefix: `${apiPrefix}/connect`,
+            },
+            ...providers,
+        };
         const [requestPath] = ctx.request.url.split("?");
-        console.log(requestPath);
-        const provider = requestPath.split("/")[4];
-        console.log(provider);
+        const provider = requestPath.split("/connect/")[1].split("/")[0];
         if (!lodash_1.default.get(grantConfig[provider], "enabled")) {
-            return ctx.badRequest(null, "This provider is disabled.");
+            throw new ApplicationError("This provider is disabled");
+        }
+        if (!strapi.config.server.url.startsWith("http")) {
+            strapi.log.warn("You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url");
         }
         // Ability to pass OAuth callback dynamically
         grantConfig[provider].callback =
-            lodash_1.default.get(ctx, "query.callback") || grantConfig[provider].callback;
-        grantConfig[provider].redirect_uri =
-            grantConfig[provider].redirect_uri ||
-                `${strapi.config.server.url}/auth/${provider}`;
+            lodash_1.default.get(ctx, "query.callback") ||
+                lodash_1.default.get(ctx, "session.grant.dynamic.callback") ||
+                grantConfig[provider].callback;
+        grantConfig[provider].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
         return (0, grant_koa_1.default)(grantConfig)(ctx, next);
         // await validateGoogleAuthBody(ctx.request.body);
         // const { email } = ctx.request.body;

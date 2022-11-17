@@ -116,29 +116,39 @@ export default function (plugin) {
   };
 
   plugin.controllers.auth["connect"] = async (ctx, next) => {
-    const grantConfig = await strapi
-      .store({
-        environment: "",
-        type: "plugin",
-        name: "users-permissions",
-        key: "grant",
-      })
+    const providers = await strapi
+      .store({ type: "plugin", name: "users-permissions", key: "grant" })
       .get();
 
-    console.log(grantConfig);
+    const apiPrefix = strapi.config.get("api.rest.prefix");
+    const grantConfig = {
+      defaults: {
+        prefix: `${apiPrefix}/connect`,
+      },
+      ...providers,
+    };
 
     const [requestPath] = ctx.request.url.split("?");
-    const provider = requestPath.split("/")[4];
+    const provider = requestPath.split("/connect/")[1].split("/")[0];
 
     if (!_.get(grantConfig[provider], "enabled")) {
-      return ctx.badRequest(null, "This provider is disabled.");
+      throw new ApplicationError("This provider is disabled");
     }
+
+    if (!strapi.config.server.url.startsWith("http")) {
+      strapi.log.warn(
+        "You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url"
+      );
+    }
+
     // Ability to pass OAuth callback dynamically
     grantConfig[provider].callback =
-      _.get(ctx, "query.callback") || grantConfig[provider].callback;
-    grantConfig[provider].redirect_uri =
-      grantConfig[provider].redirect_uri ||
-      `${strapi.config.server.url}/auth/${provider}`;
+      _.get(ctx, "query.callback") ||
+      _.get(ctx, "session.grant.dynamic.callback") ||
+      grantConfig[provider].callback;
+    grantConfig[
+      provider
+    ].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
 
     return grant(grantConfig)(ctx, next);
     // await validateGoogleAuthBody(ctx.request.body);
