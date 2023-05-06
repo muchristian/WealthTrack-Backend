@@ -79,6 +79,19 @@ export default factories.createCoreService(
         }
       );
 
+      const budgets = await strapi.entityService.findMany(
+        "api::category.category",
+        {
+          populate: {
+            transaction_type: true,
+          },
+          filters: {
+            users_permissions_user: { id: user },
+          },
+        }
+      );
+      console.log(budgets);
+
       const transactionsObj = {
         expense: 0,
         "debt/loan": 0,
@@ -148,6 +161,18 @@ export default factories.createCoreService(
         ),
       };
 
+      const budgetsObj = {};
+
+      for (const budget of budgets) {
+        if (budget.transaction_type.name === "Expense") {
+          if (!budgetsObj[budget.name]) {
+            budgetsObj[budget.name] = {
+              ...budget,
+            };
+          }
+        }
+      }
+
       const totalAmountUsedByEachExpense = {};
       const totalAmountUsedByEachExpenseResult = [];
       const expenses = transactions.filter(
@@ -165,16 +190,15 @@ export default factories.createCoreService(
         }
       }
 
+      console.log(totalAmountUsedByEachExpense);
+
       for (const key of Object.keys(totalAmountUsedByEachExpense)) {
-        const value = Object.values(totalAmountUsedByEachExpense).reduce(
-          (sum: number, t: { amount: number; percentage: number }) =>
-            sum + t.amount,
-          0
-        );
         totalAmountUsedByEachExpense[key].percentage = Math.round(
-          (totalAmountUsedByEachExpense[key].amount / +value) * 100
+          (totalAmountUsedByEachExpense[key].amount * 100) /
+            budgetsObj[key].budget
         );
         totalAmountUsedByEachExpenseResult.push({
+          id: budgetsObj[key].id,
           name: key,
           amount: totalAmountUsedByEachExpense[key].amount,
           percentage: totalAmountUsedByEachExpense[key].percentage,
@@ -191,7 +215,11 @@ export default factories.createCoreService(
         },
         transactionsAnalytics: getDataBytype(transactionsByType),
         walletsAnalytics: totalTransactionsBywallet,
-        expensesAnalytics: totalAmountUsedByEachExpenseResult,
+        expensesAnalytics: totalAmountUsedByEachExpenseResult
+          .sort((a, b) => {
+            return a.percentage - b.percentage;
+          })
+          .slice(0, 5),
       };
     },
   })

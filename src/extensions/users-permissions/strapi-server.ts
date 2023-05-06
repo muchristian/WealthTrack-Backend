@@ -6,8 +6,15 @@ import { response } from "../../utils/response";
 import * as middlewares from "../../middlewares/auth";
 import _ from "lodash";
 import grant from "grant-koa";
+import { sendEmail } from "../../utils/sendgrid";
+import { forgotPasswordEmailTemplate } from "./utils/forgotPasswordEmailTemplate";
 
-const { validateLoginBody, validateRegisterBody } = validations.default;
+const {
+  validateLoginBody,
+  validateRegisterBody,
+  validateForgotPasswordBody,
+  validateResetPasswordBody,
+} = validations.default;
 const { ApplicationError, ValidationError } = utils.errors;
 
 export default function (plugin) {
@@ -26,7 +33,7 @@ export default function (plugin) {
       throw new ValidationError("Email is already taken");
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     const result = await strapi.db
       .query("plugin::users-permissions.user")
@@ -52,33 +59,117 @@ export default function (plugin) {
 
   // authentication
   plugin.controllers.auth["callback"] = async (ctx) => {
-    await validateLoginBody(ctx.request.body);
-    const { email, password } = ctx.request.body;
+    const provider = ctx.params.provider || "local";
+    console.log(ctx.params);
+    if (provider === "local") {
+      await validateLoginBody(ctx.request.body);
+      const { email, password } = ctx.request.body;
+      const user = await strapi.db
+        .query("plugin::users-permissions.user")
+        .findOne({
+          where: {
+            email: email.toLowerCase(),
+          },
+        });
+      console.log(user.password);
+      if (!user) {
+        throw new ValidationError("Invalid email or password");
+      }
+      console.log(password);
+      const validPassword = await strapi.plugins["users-permissions"].services[
+        "user"
+      ].validatePassword(password, user.password);
+      if (!validPassword) {
+        throw new ValidationError("Invalid email or password");
+      }
+      // if (!user.confirmed) {
+      //   throw new ApplicationError("Your account email is not confirmed");
+      // }
+      if (user.blocked === true) {
+        throw new ApplicationError(
+          "Your account has been blocked by an administrator"
+        );
+      }
+
+      const accessToken = strapi.plugins["users-permissions"].services[
+        "jwt"
+      ].issue(
+        { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+        { expiresIn: "5m" }
+      );
+
+      const refreshToken = strapi.plugins["users-permissions"].services[
+        "jwt"
+      ].issue(
+        { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
+        { expiresIn: "1y" }
+      );
+
+      await strapi.db.query("plugin::users-permissions.user").update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          refreshToken,
+        },
+      });
+
+      ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+      ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+
+      return response(
+        ctx,
+        200,
+        "User authenticated successfully",
+        await sanitizeOutput(
+          user,
+          ctx,
+          strapi.getModel("plugin::users-permissions.user")
+        ),
+        refreshToken
+      );
+    }
+
+    const { query } = ctx;
+    console.log(query);
+    const access_token = query.access_token || query.code || query.oauth_token;
+
+    if (!access_token) {
+      throw new ValidationError("No access_token.");
+    }
+
+    const providers = await strapi
+      .store({ type: "plugin", name: "users-permissions", key: "grant" })
+      .get();
+
+    // Get the profile.
+    const profile = await strapi.plugins["users-permissions"].services[
+      "providers-registry"
+    ].run({ provider, query, access_token, providers });
+    console.log(profile);
+    const email = profile.email.toLowerCase();
+
+    // We need at least the mail.
+    if (!email) {
+      throw new ValidationError("Email is not available");
+    }
+
     const user = await strapi.db
       .query("plugin::users-permissions.user")
       .findOne({
         where: {
-          email: email.toLowerCase(),
+          email,
         },
       });
+    console.log(user);
     if (!user) {
-      throw new ValidationError("Invalid email or password");
+      throw new ValidationError("Invalid email or password from provider");
     }
-    const validPassword = await strapi.plugins["users-permissions"].services[
-      "user"
-    ].validatePassword(password, user.password);
-    if (!validPassword) {
-      throw new ValidationError("Invalid email or password");
-    }
-    // if (!user.confirmed) {
-    //   throw new ApplicationError("Your account email is not confirmed");
-    // }
     if (user.blocked === true) {
       throw new ApplicationError(
         "Your account has been blocked by an administrator"
       );
     }
-
     const accessToken = strapi.plugins["users-permissions"].services[
       "jwt"
     ].issue(
@@ -92,6 +183,9 @@ export default function (plugin) {
       { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
       { expiresIn: "1y" }
     );
+
+    console.log(user);
+    console.log(refreshToken);
 
     await strapi.db.query("plugin::users-permissions.user").update({
       where: {
@@ -250,8 +344,109 @@ export default function (plugin) {
     );
   };
 
+  plugin.controllers.auth["forgotPassword"] = async (ctx) => {
+    await validateForgotPasswordBody(ctx.request.body);
+    const { email } = ctx.request.body;
+    const user = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: {
+          email: email.toLowerCase(),
+        },
+      });
+    if (!user) {
+      throw new ValidationError("Invalid email");
+    }
+    console.log(email);
+    const resetToken = strapi.plugins["users-permissions"].services[
+      "jwt"
+    ].issue({ id: user.id }, { expiresIn: "10m" });
+    const msg = {
+      to: email,
+      from: "muchris.dev@gmail.com",
+      subject: "Forgot password",
+      text: "A confirmation email to reset your password",
+      html: forgotPasswordEmailTemplate(user, resetToken),
+    };
+
+    sendEmail(msg);
+
+    return response(
+      ctx,
+      200,
+      "You successfully received reset password confirmation email",
+      undefined,
+      undefined
+    );
+  };
+
+  plugin.controllers.auth["resetPassword"] = async (ctx) => {
+    await validateResetPasswordBody(ctx.request.body);
+    const { id } = ctx.request.params;
+    const { password } = ctx.request.body;
+    const userExist = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: {
+          id,
+        },
+      });
+    if (!userExist) {
+      throw new ValidationError("Invalid user");
+    }
+    const validPassword = await strapi.plugins["users-permissions"].services[
+      "user"
+    ].validatePassword(password, userExist.password);
+    if (validPassword) {
+      throw new ValidationError("The password is the same as the previous");
+    }
+    const hashedPassword = await hashPassword(password);
+    const updatedUser = await strapi.db
+      .query("plugin::users-permissions.user")
+      .update({
+        where: {
+          id,
+        },
+        data: {
+          password: hashedPassword,
+        },
+      });
+    console.log(password);
+    console.log(updatedUser);
+    return response(
+      ctx,
+      200,
+      "You successfully reseted password",
+      undefined,
+      undefined
+    );
+  };
+
   plugin.controllers.user["find"] = async (ctx) => {
-    return "fdafdsa";
+    const { id } = ctx.request.params;
+    console.log(id, "fdsa");
+    const user = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { id },
+      });
+    if (!user) {
+      throw new ValidationError("Invalid user");
+    }
+
+    console.log(user);
+
+    return response(
+      ctx,
+      200,
+      "User retrieved successfully",
+      await sanitizeOutput(
+        user,
+        ctx,
+        strapi.getModel("plugin::users-permissions.user")
+      ),
+      undefined
+    );
   };
 
   plugin.middlewares = Object.assign(plugin.middlewares, middlewares);
@@ -298,6 +493,24 @@ export default function (plugin) {
       },
     },
     {
+      method: "POST",
+      path: "/auth/forgot-password",
+      handler: "auth.forgotPassword",
+      config: {
+        middlewares: [],
+        prefix: "",
+      },
+    },
+    {
+      method: "PUT",
+      path: "/auth/reset-password/:id",
+      handler: "auth.resetPassword",
+      config: {
+        middlewares: [],
+        prefix: "",
+      },
+    },
+    {
       method: "GET",
       path: "/auth/logout",
       handler: "auth.logout",
@@ -307,18 +520,17 @@ export default function (plugin) {
         prefix: "",
       },
     },
+
     {
       method: "GET",
-      path: "/users",
+      path: "/user/:id",
       handler: "user.find",
       config: {
         middlewares: ["plugin::users-permissions.access"],
+        policies: [],
         prefix: "",
       },
     }
   );
   return plugin;
-}
-function validateGoogleAuthBody(body: any) {
-  throw new Error("Function not implemented.");
 }

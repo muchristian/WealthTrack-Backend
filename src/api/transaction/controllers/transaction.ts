@@ -20,8 +20,7 @@ export default factories.createCoreController(
       const queries = ctx.request.query;
       const entity = await strapi
         .service("api::transaction.transaction")
-        .find(queries);
-      console.log(entity);
+        .find({ ctx, filter: queries });
       const data = {
         all: entity,
         income: filterData(entity, "Income"),

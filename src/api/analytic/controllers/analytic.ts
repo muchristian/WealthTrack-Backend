@@ -14,14 +14,13 @@ export default factories.createCoreController(
       const queries = ctx.request.query;
       console.log(queries);
       const { type, user } = queries;
-      const entity = await strapi
-        .service("api::analytic.analytic")
-        .find({
-          ctx,
-          filter: _.pick(queries, ["dateFrom", "dateTo"]),
-          type,
-          user,
-        });
+      const entity = await strapi.service("api::analytic.analytic").find({
+        ctx,
+        filter: _.pick(queries, ["dateFrom", "dateTo"]),
+        type,
+        user,
+      });
+      console.log(entity);
       return response(ctx, 200, undefined, entity, undefined);
     },
   })

@@ -50,6 +50,15 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
                 users_id: { id: user },
             },
         });
+        const budgets = await strapi.entityService.findMany("api::category.category", {
+            populate: {
+                transaction_type: true,
+            },
+            filters: {
+                users_permissions_user: { id: user },
+            },
+        });
+        console.log(budgets);
         const transactionsObj = {
             expense: 0,
             "debt/loan": 0,
@@ -95,6 +104,16 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
                 transactions.length) *
                 100),
         };
+        const budgetsObj = {};
+        for (const budget of budgets) {
+            if (budget.transaction_type.name === "Expense") {
+                if (!budgetsObj[budget.name]) {
+                    budgetsObj[budget.name] = {
+                        ...budget,
+                    };
+                }
+            }
+        }
         const totalAmountUsedByEachExpense = {};
         const totalAmountUsedByEachExpenseResult = [];
         const expenses = transactions.filter((t) => t.transaction_type === "Expense");
@@ -110,10 +129,12 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
                     +expense.amount;
             }
         }
+        console.log(totalAmountUsedByEachExpense);
         for (const key of Object.keys(totalAmountUsedByEachExpense)) {
-            const value = Object.values(totalAmountUsedByEachExpense).reduce((sum, t) => sum + t.amount, 0);
-            totalAmountUsedByEachExpense[key].percentage = Math.round((totalAmountUsedByEachExpense[key].amount / +value) * 100);
+            totalAmountUsedByEachExpense[key].percentage = Math.round((totalAmountUsedByEachExpense[key].amount * 100) /
+                budgetsObj[key].budget);
             totalAmountUsedByEachExpenseResult.push({
+                id: budgetsObj[key].id,
                 name: key,
                 amount: totalAmountUsedByEachExpense[key].amount,
                 percentage: totalAmountUsedByEachExpense[key].percentage,
@@ -128,7 +149,11 @@ exports.default = strapi_1.factories.createCoreService("api::analytic.analytic",
             },
             transactionsAnalytics: (0, date_util_1.getDataBytype)(transactionsByType),
             walletsAnalytics: totalTransactionsBywallet,
-            expensesAnalytics: totalAmountUsedByEachExpenseResult,
+            expensesAnalytics: totalAmountUsedByEachExpenseResult
+                .sort((a, b) => {
+                return a.percentage - b.percentage;
+            })
+                .slice(0, 5),
         };
     },
 }));

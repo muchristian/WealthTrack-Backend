@@ -10,11 +10,11 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
         const queries = ctx.request.query;
-        console.log(queries);
+        console.log("ddddd", queries);
         if (!("transactionType" in queries)) {
             const entity = await strapi
                 .service("api::category.category")
-                .findMany(queries);
+                .findMany(ctx, queries);
             return entity;
         }
         else {
@@ -25,11 +25,25 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
         }
     },
     async create(ctx) {
-        if (!("transaction_type" in ctx.request.body.data))
+        const { data } = ctx.request.body;
+        console.log("fdsa", data);
+        if (!("transaction_type" in data))
             return (0, errorHandler_util_1.ErrorHandler)(ctx, 400, "Transaction_type is missing from the request");
+        const category = await strapi.db.query("api::category.category").findOne({
+            where: {
+                $and: [
+                    { name: data.name.toLowerCase() },
+                    { users_permissions_user: { id: data.users_permissions_user } },
+                ],
+            },
+        });
+        console.log(category);
+        if (category) {
+            return ctx.conflict("The Budget name already exist");
+        }
         const entity = await strapi
             .service("api::category.category")
-            .create(ctx.request.body.data);
+            .create(data);
         return (0, response_1.response)(ctx, 200, "Category has been created successfully", entity, undefined);
     },
     async update(ctx) {
@@ -42,6 +56,26 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
         return (0, response_1.response)(ctx, 200, "Category has been updated successfully", result.data, undefined);
     },
     async delete(ctx) {
+        console.log(ctx.params.id);
+        const findCategory = await strapi.entityService.findOne("api::category.category", ctx.params.id, {
+            populate: { users_permissions_user: true },
+        });
+        if (!findCategory) {
+            return ctx.notFound("The Budget name not found");
+        }
+        console.log(findCategory);
+        const findTransactions = await strapi.entityService.findMany("api::transaction.transaction", {
+            filters: {
+                category: findCategory.name,
+                users_id: {
+                    id: findCategory.users_permissions_user.id,
+                },
+            },
+        });
+        console.log(findTransactions);
+        if (findTransactions.length > 0) {
+            return ctx.badRequest("The Budget name is associated with transactions");
+        }
         // some logic here
         const result = await super.delete(ctx);
         // some more logic

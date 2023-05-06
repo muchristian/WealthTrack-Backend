@@ -5,7 +5,7 @@ module.exports = ({ env }) => ({
     app: {
         keys: env.array("APP_KEYS"),
     },
-    url: env("PUBLIC_URL", ""),
+    url: "http://localhost:8080/",
     proxy: true,
     jwt: env("JWT_SECRET"),
 });

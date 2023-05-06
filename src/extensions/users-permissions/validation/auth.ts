@@ -9,19 +9,11 @@ const callbackSchema = yup
   })
   .noUnknown();
 
-const validateGoogleAuthBody = yup.object({
-  email: yup.string().email().required(),
-});
-
 const registerSchema = yup.object({
   firstname: yup.string().required(),
   lastname: yup.string().required(),
   email: yup.string().email().required(),
   password: yup.string().required(),
-});
-
-const sendEmailConfirmationSchema = yup.object({
-  email: yup.string().email().required(),
 });
 
 const validateEmailConfirmationSchema = yup.object({
@@ -37,8 +29,10 @@ const forgotPasswordSchema = yup
 const resetPasswordSchema = yup
   .object({
     password: yup.string().required(),
-    passwordConfirmation: yup.string().required(),
-    code: yup.string().required(),
+    confirmPassword: yup
+      .string()
+      .required()
+      .oneOf([yup.ref("password")], "Passwords do not match"),
   })
   .noUnknown();
 
@@ -56,9 +50,6 @@ const changePasswordSchema = yup
 export default {
   validateLoginBody: validateYupSchema(callbackSchema),
   validateRegisterBody: validateYupSchema(registerSchema),
-  validateSendEmailConfirmationBody: validateYupSchema(
-    sendEmailConfirmationSchema
-  ),
   validateEmailConfirmationBody: validateYupSchema(
     validateEmailConfirmationSchema
   ),

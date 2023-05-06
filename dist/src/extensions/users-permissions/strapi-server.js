@@ -33,7 +33,9 @@ const sanitize_1 = require("./utils/sanitize");
 const response_1 = require("../../utils/response");
 const middlewares = __importStar(require("../../middlewares/auth"));
 const lodash_1 = __importDefault(require("lodash"));
-const { validateLoginBody, validateRegisterBody } = validations.default;
+const sendgrid_1 = require("../../utils/sendgrid");
+const forgotPasswordEmailTemplate_1 = require("./utils/forgotPasswordEmailTemplate");
+const { validateLoginBody, validateRegisterBody, validateForgotPasswordBody, validateResetPasswordBody, } = validations.default;
 const { ApplicationError, ValidationError } = utils_1.default.errors;
 function default_1(plugin) {
     // registration
@@ -50,7 +52,7 @@ function default_1(plugin) {
         if (user) {
             throw new ValidationError("Email is already taken");
         }
-        const hashedPassword = (0, auth_1.hashPassword)(password);
+        const hashedPassword = await (0, auth_1.hashPassword)(password);
         const result = await strapi.db
             .query("plugin::users-permissions.user")
             .create({
@@ -63,30 +65,82 @@ function default_1(plugin) {
     };
     // authentication
     plugin.controllers.auth["callback"] = async (ctx) => {
-        await validateLoginBody(ctx.request.body);
-        const { email, password } = ctx.request.body;
+        const provider = ctx.params.provider || "local";
+        console.log(ctx.params);
+        if (provider === "local") {
+            await validateLoginBody(ctx.request.body);
+            const { email, password } = ctx.request.body;
+            const user = await strapi.db
+                .query("plugin::users-permissions.user")
+                .findOne({
+                where: {
+                    email: email.toLowerCase(),
+                },
+            });
+            console.log(user.password);
+            if (!user) {
+                throw new ValidationError("Invalid email or password");
+            }
+            console.log(password);
+            const validPassword = await strapi.plugins["users-permissions"].services["user"].validatePassword(password, user.password);
+            if (!validPassword) {
+                throw new ValidationError("Invalid email or password");
+            }
+            // if (!user.confirmed) {
+            //   throw new ApplicationError("Your account email is not confirmed");
+            // }
+            if (user.blocked === true) {
+                throw new ApplicationError("Your account has been blocked by an administrator");
+            }
+            const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5m" });
+            const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "1y" });
+            await strapi.db.query("plugin::users-permissions.user").update({
+                where: {
+                    id: user.id,
+                },
+                data: {
+                    refreshToken,
+                },
+            });
+            ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
+            ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
+            return (0, response_1.response)(ctx, 200, "User authenticated successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), refreshToken);
+        }
+        const { query } = ctx;
+        console.log(query);
+        const access_token = query.access_token || query.code || query.oauth_token;
+        if (!access_token) {
+            throw new ValidationError("No access_token.");
+        }
+        const providers = await strapi
+            .store({ type: "plugin", name: "users-permissions", key: "grant" })
+            .get();
+        // Get the profile.
+        const profile = await strapi.plugins["users-permissions"].services["providers-registry"].run({ provider, query, access_token, providers });
+        console.log(profile);
+        const email = profile.email.toLowerCase();
+        // We need at least the mail.
+        if (!email) {
+            throw new ValidationError("Email is not available");
+        }
         const user = await strapi.db
             .query("plugin::users-permissions.user")
             .findOne({
             where: {
-                email: email.toLowerCase(),
+                email,
             },
         });
+        console.log(user);
         if (!user) {
-            throw new ValidationError("Invalid email or password");
+            throw new ValidationError("Invalid email or password from provider");
         }
-        const validPassword = await strapi.plugins["users-permissions"].services["user"].validatePassword(password, user.password);
-        if (!validPassword) {
-            throw new ValidationError("Invalid email or password");
-        }
-        // if (!user.confirmed) {
-        //   throw new ApplicationError("Your account email is not confirmed");
-        // }
         if (user.blocked === true) {
             throw new ApplicationError("Your account has been blocked by an administrator");
         }
         const accessToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "5m" });
         const refreshToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id, ...lodash_1.default.pick(user, ["firstname", "lastname", "email"]) }, { expiresIn: "1y" });
+        console.log(user);
+        console.log(refreshToken);
         await strapi.db.query("plugin::users-permissions.user").update({
             where: {
                 id: user.id,
@@ -199,8 +253,77 @@ function default_1(plugin) {
         ctx.cookies.set("refreshToken");
         return (0, response_1.response)(ctx, 200, "You successfully logged out", undefined, undefined);
     };
+    plugin.controllers.auth["forgotPassword"] = async (ctx) => {
+        await validateForgotPasswordBody(ctx.request.body);
+        const { email } = ctx.request.body;
+        const user = await strapi.db
+            .query("plugin::users-permissions.user")
+            .findOne({
+            where: {
+                email: email.toLowerCase(),
+            },
+        });
+        if (!user) {
+            throw new ValidationError("Invalid email");
+        }
+        console.log(email);
+        const resetToken = strapi.plugins["users-permissions"].services["jwt"].issue({ id: user.id }, { expiresIn: "10m" });
+        const msg = {
+            to: email,
+            from: "muchris.dev@gmail.com",
+            subject: "Forgot password",
+            text: "A confirmation email to reset your password",
+            html: (0, forgotPasswordEmailTemplate_1.forgotPasswordEmailTemplate)(user, resetToken),
+        };
+        (0, sendgrid_1.sendEmail)(msg);
+        return (0, response_1.response)(ctx, 200, "You successfully received reset password confirmation email", undefined, undefined);
+    };
+    plugin.controllers.auth["resetPassword"] = async (ctx) => {
+        await validateResetPasswordBody(ctx.request.body);
+        const { id } = ctx.request.params;
+        const { password } = ctx.request.body;
+        const userExist = await strapi.db
+            .query("plugin::users-permissions.user")
+            .findOne({
+            where: {
+                id,
+            },
+        });
+        if (!userExist) {
+            throw new ValidationError("Invalid user");
+        }
+        const validPassword = await strapi.plugins["users-permissions"].services["user"].validatePassword(password, userExist.password);
+        if (validPassword) {
+            throw new ValidationError("The password is the same as the previous");
+        }
+        const hashedPassword = await (0, auth_1.hashPassword)(password);
+        const updatedUser = await strapi.db
+            .query("plugin::users-permissions.user")
+            .update({
+            where: {
+                id,
+            },
+            data: {
+                password: hashedPassword,
+            },
+        });
+        console.log(password);
+        console.log(updatedUser);
+        return (0, response_1.response)(ctx, 200, "You successfully reseted password", undefined, undefined);
+    };
     plugin.controllers.user["find"] = async (ctx) => {
-        return "fdafdsa";
+        const { id } = ctx.request.params;
+        console.log(id, "fdsa");
+        const user = await strapi.db
+            .query("plugin::users-permissions.user")
+            .findOne({
+            where: { id },
+        });
+        if (!user) {
+            throw new ValidationError("Invalid user");
+        }
+        console.log(user);
+        return (0, response_1.response)(ctx, 200, "User retrieved successfully", await (0, sanitize_1.sanitizeOutput)(user, ctx, strapi.getModel("plugin::users-permissions.user")), undefined);
     };
     plugin.middlewares = Object.assign(plugin.middlewares, middlewares);
     // Custom routes
@@ -240,6 +363,22 @@ function default_1(plugin) {
             prefix: "",
         },
     }, {
+        method: "POST",
+        path: "/auth/forgot-password",
+        handler: "auth.forgotPassword",
+        config: {
+            middlewares: [],
+            prefix: "",
+        },
+    }, {
+        method: "PUT",
+        path: "/auth/reset-password/:id",
+        handler: "auth.resetPassword",
+        config: {
+            middlewares: [],
+            prefix: "",
+        },
+    }, {
         method: "GET",
         path: "/auth/logout",
         handler: "auth.logout",
@@ -250,16 +389,14 @@ function default_1(plugin) {
         },
     }, {
         method: "GET",
-        path: "/users",
+        path: "/user/:id",
         handler: "user.find",
         config: {
             middlewares: ["plugin::users-permissions.access"],
+            policies: [],
             prefix: "",
         },
     });
     return plugin;
 }
 exports.default = default_1;
-function validateGoogleAuthBody(body) {
-    throw new Error("Function not implemented.");
-}

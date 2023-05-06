@@ -34,7 +34,9 @@ const { ValidationError } = utils_1.default.errors;
 const access = (options, { strapi }) => {
     return async (ctx, next) => {
         const accessToken = ctx.cookies.get("accessToken");
+        console.log(accessToken);
         const { payload, expired } = authUtils.verifyToken(accessToken);
+        console.log(payload, expired);
         if (!payload || expired) {
             return (0, errorHandler_util_1.ErrorHandler)(ctx, 401, "Unauthorized");
         }
@@ -63,6 +65,7 @@ const refresh = (options, { strapi }) => {
                 refreshToken,
             },
         });
+        console.log(isRefreshTokenExist);
         if (!isRefreshTokenExist) {
             return (0, errorHandler_util_1.ErrorHandler)(ctx, 401, "Unauthorized");
         }
