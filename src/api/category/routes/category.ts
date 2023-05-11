@@ -42,9 +42,7 @@ const myOverideRoutes = [
     path: "/categories", // Only match when the URL parameter is composed of lowercase letters
     handler: "category.findAll",
     config: {
-      middlewares: [
-        // middlewares.auth(strapi)
-      ],
+      middlewares: [],
     },
   },
 
@@ -54,9 +52,7 @@ const myOverideRoutes = [
     path: "/categories", // Only match when the URL parameter is composed of lowercase letters
     handler: "category.create",
     config: {
-      middlewares: [
-        // middlewares.auth(strapi)
-      ],
+      middlewares: [],
     },
   },
 ];

@@ -39,9 +39,7 @@ const myOverideRoutes = [
         path: "/wallets",
         handler: "wallet.findAll",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
 ];

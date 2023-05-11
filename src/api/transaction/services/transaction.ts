@@ -24,7 +24,6 @@ export default factories.createCoreService(
       const { ctx, filter } = functions;
       const { dateFrom, dateTo, search, user, start } = filter;
       let searchQuery = {};
-      console.log(search);
       if (search)
         searchQuery = {
           category: {

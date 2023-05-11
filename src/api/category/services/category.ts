@@ -27,14 +27,11 @@ export default factories.createCoreService(
 
     async findMany(ctx: Koa.context, queries) {
       const { user, dateFrom, dateTo } = queries;
-      console.log("fdsafdsa", user);
       const { actualStartDate, actualEndDate } = getActualDateRange(
         ctx,
         parseDate(ctx, dateFrom),
         parseDate(ctx, dateTo)
       );
-      console.log(actualEndDate);
-      console.log(actualStartDate);
       const categories = await strapi.entityService.findMany(
         "api::category.category",
         {
@@ -47,7 +44,6 @@ export default factories.createCoreService(
           },
         }
       );
-      console.log(categories);
 
       const transactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
@@ -61,7 +57,6 @@ export default factories.createCoreService(
           fields: ["category", "id", "amount"],
         }
       );
-      console.log(transactions);
       let res = [];
       let obj = {};
       if (transactions.length > 0) {
@@ -74,8 +69,6 @@ export default factories.createCoreService(
           }
         }
       }
-      console.log(categories);
-      console.log(obj);
       for (let el of categories) {
         if (obj[el.name.toLowerCase()]) {
           const usedBudget = el.budget - obj[el.name.toLowerCase()];
@@ -100,13 +93,10 @@ export default factories.createCoreService(
           });
         }
       }
-
-      console.log(res);
       return res;
     },
 
     async create(data: any) {
-      console.log("ddd", data);
       return strapi.entityService.create("api::category.category", {
         data: {
           ...data,

@@ -10,7 +10,6 @@ exports.default = strapi_1.factories.createCoreService("api::transaction.transac
         const { ctx, filter } = functions;
         const { dateFrom, dateTo, search, user, start } = filter;
         let searchQuery = {};
-        console.log(search);
         if (search)
             searchQuery = {
                 category: {

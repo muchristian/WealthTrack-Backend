@@ -39,9 +39,7 @@ const myOverideRoutes = [
         path: "/categories",
         handler: "category.findAll",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
     {
@@ -50,9 +48,7 @@ const myOverideRoutes = [
         path: "/categories",
         handler: "category.create",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
 ];

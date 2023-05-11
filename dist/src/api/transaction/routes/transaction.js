@@ -39,9 +39,7 @@ const myOverideRoutes = [
         path: "/transactions",
         handler: "transaction.findAll",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
     {
@@ -50,9 +48,7 @@ const myOverideRoutes = [
         path: "/transactions",
         handler: "transaction.createTransaction",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
 ];

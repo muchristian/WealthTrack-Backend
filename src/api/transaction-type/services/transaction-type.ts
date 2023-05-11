@@ -9,9 +9,7 @@ export default factories.createCoreService(
   ({ strapi }) => ({
     async find(queries: any) {
       const { user } = queries;
-      console.log();
       if (+user !== 0) {
-        console.log("ddddd");
         return strapi.entityService.findMany(
           "api::transaction-type.transaction-type",
           {
@@ -28,7 +26,6 @@ export default factories.createCoreService(
           }
         );
       } else {
-        console.log("eeeee");
         return strapi.entityService.findMany(
           "api::transaction-type.transaction-type",
           {}
@@ -38,7 +35,6 @@ export default factories.createCoreService(
 
     async findMany(queries) {
       const { user } = queries;
-      console.log(user);
       return strapi.entityService.findMany(
         "api::transaction-type.transaction-type",
         {}

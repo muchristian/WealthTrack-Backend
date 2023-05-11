@@ -7,7 +7,6 @@
 import { factories } from "@strapi/strapi";
 import { ErrorHandler } from "../../../utils/errorHandler.util";
 import { response } from "../../../utils/response";
-import walletService from "../../wallet/services/wallet";
 
 const filterData = (data, type) => {
   return data.filter((d) => d.transaction_type == type);

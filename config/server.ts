@@ -4,7 +4,7 @@ export = ({ env }) => ({
   app: {
     keys: env.array("APP_KEYS"),
   },
-  url: "http://localhost:8080/",
+  url: "https://bc5a-102-22-172-160.ngrok-free.app",
   proxy: true,
   jwt: env("JWT_SECRET"),
 });

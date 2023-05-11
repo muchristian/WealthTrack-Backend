@@ -5,9 +5,7 @@ const date_fns_1 = require("date-fns");
 const errorHandler_util_1 = require("./errorHandler.util");
 const getDataBytype = (data, type = "day") => {
     if (type === "day") {
-        console.log(data[0].date);
         const newDate = new Date(reverse(data[0].date));
-        console.log(newDate);
         return data;
     }
     else {
@@ -21,8 +19,6 @@ const getDataBytype = (data, type = "day") => {
                     income: 0,
                 };
             }
-            console.log(d);
-            console.log(groups[date].expense);
             groups[date] = Object.assign(groups[date], {
                 expense: groups[date].expense + d.expense,
                 "debt/loan": groups[date]["debt/loan"] + d["debt/loan"],
@@ -30,7 +26,6 @@ const getDataBytype = (data, type = "day") => {
             });
             return groups;
         }, {});
-        console.log(Object.values(groups));
         return Object.values(groups);
     }
 };
@@ -39,7 +34,6 @@ const reverse = (date) => {
     return date.split("-").reverse().join("-");
 };
 const dateFormByType = (date, type) => {
-    console.log(date);
     return type === "month"
         ? date.toLocaleString("en-us", { month: "short", year: "numeric" })
         : date.toLocaleString("en-us", { year: "numeric" });

@@ -25,10 +25,7 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
     },
     async findMany(ctx, queries) {
         const { user, dateFrom, dateTo } = queries;
-        console.log("fdsafdsa", user);
         const { actualStartDate, actualEndDate } = (0, date_util_1.getActualDateRange)(ctx, (0, date_util_1.parseDate)(ctx, dateFrom), (0, date_util_1.parseDate)(ctx, dateTo));
-        console.log(actualEndDate);
-        console.log(actualStartDate);
         const categories = await strapi.entityService.findMany("api::category.category", {
             sort: { createdAt: "asc" },
             populate: {
@@ -38,7 +35,6 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
                 users_permissions_user: { id: user },
             },
         });
-        console.log(categories);
         const transactions = await strapi.entityService.findMany("api::transaction.transaction", {
             filters: {
                 users_id: { id: user },
@@ -48,7 +44,6 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
             },
             fields: ["category", "id", "amount"],
         });
-        console.log(transactions);
         let res = [];
         let obj = {};
         if (transactions.length > 0) {
@@ -62,8 +57,6 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
                 }
             }
         }
-        console.log(categories);
-        console.log(obj);
         for (let el of categories) {
             if (obj[el.name.toLowerCase()]) {
                 const usedBudget = el.budget - obj[el.name.toLowerCase()];
@@ -86,11 +79,9 @@ exports.default = strapi_1.factories.createCoreService("api::category.category",
                 });
             }
         }
-        console.log(res);
         return res;
     },
     async create(data) {
-        console.log("ddd", data);
         return strapi.entityService.create("api::category.category", {
             data: {
                 ...data,

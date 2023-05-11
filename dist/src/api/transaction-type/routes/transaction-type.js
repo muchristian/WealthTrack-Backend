@@ -39,9 +39,7 @@ const myOverideRoutes = [
         path: "/transaction-types",
         handler: "transaction-type.findAll",
         config: {
-            middlewares: [
-            // middlewares.auth(strapi)
-            ],
+            middlewares: [],
         },
     },
 ];

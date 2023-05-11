@@ -66,7 +66,6 @@ export default factories.createCoreService(
           end: actualEndDate,
         }).map((d) => `${format(d, "MM")}-${format(d, "yyyy")}`);
       }
-      console.log("ddsa", user);
       const transactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
         {
@@ -90,8 +89,6 @@ export default factories.createCoreService(
           },
         }
       );
-      console.log(budgets);
-
       const transactionsObj = {
         expense: 0,
         "debt/loan": 0,
@@ -189,9 +186,6 @@ export default factories.createCoreService(
             +expense.amount;
         }
       }
-
-      console.log(totalAmountUsedByEachExpense);
-
       for (const key of Object.keys(totalAmountUsedByEachExpense)) {
         totalAmountUsedByEachExpense[key].percentage = Math.round(
           (totalAmountUsedByEachExpense[key].amount * 100) /

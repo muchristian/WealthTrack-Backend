@@ -60,7 +60,6 @@ export default function (plugin) {
   // authentication
   plugin.controllers.auth["callback"] = async (ctx) => {
     const provider = ctx.params.provider || "local";
-    console.log(ctx.params);
     if (provider === "local") {
       await validateLoginBody(ctx.request.body);
       const { email, password } = ctx.request.body;
@@ -71,20 +70,15 @@ export default function (plugin) {
             email: email.toLowerCase(),
           },
         });
-      console.log(user.password);
       if (!user) {
         throw new ValidationError("Invalid email or password");
       }
-      console.log(password);
       const validPassword = await strapi.plugins["users-permissions"].services[
         "user"
       ].validatePassword(password, user.password);
       if (!validPassword) {
         throw new ValidationError("Invalid email or password");
       }
-      // if (!user.confirmed) {
-      //   throw new ApplicationError("Your account email is not confirmed");
-      // }
       if (user.blocked === true) {
         throw new ApplicationError(
           "Your account has been blocked by an administrator"
@@ -131,7 +125,6 @@ export default function (plugin) {
     }
 
     const { query } = ctx;
-    console.log(query);
     const access_token = query.access_token || query.code || query.oauth_token;
 
     if (!access_token) {
@@ -146,7 +139,6 @@ export default function (plugin) {
     const profile = await strapi.plugins["users-permissions"].services[
       "providers-registry"
     ].run({ provider, query, access_token, providers });
-    console.log(profile);
     const email = profile.email.toLowerCase();
 
     // We need at least the mail.
@@ -161,9 +153,8 @@ export default function (plugin) {
           email,
         },
       });
-    console.log(user);
     if (!user) {
-      throw new ValidationError("Invalid email or password from provider");
+      throw new ValidationError("User does not exist, Please register");
     }
     if (user.blocked === true) {
       throw new ApplicationError(
@@ -183,9 +174,6 @@ export default function (plugin) {
       { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
       { expiresIn: "1y" }
     );
-
-    console.log(user);
-    console.log(refreshToken);
 
     await strapi.db.query("plugin::users-permissions.user").update({
       where: {
@@ -212,98 +200,9 @@ export default function (plugin) {
     );
   };
 
-  // plugin.controllers.auth["connect"] = async (ctx, next) => {
-  //   const providers = await strapi
-  //     .store({ type: "plugin", name: "users-permissions", key: "grant" })
-  //     .get();
-
-  //   const apiPrefix = strapi.config.get("api.rest.prefix");
-  //   const grantConfig = {
-  //     defaults: {
-  //       prefix: `${apiPrefix}/connect`,
-  //     },
-  //     ...providers,
-  //   };
-
-  //   const [requestPath] = ctx.request.url.split("?");
-  //   const provider = requestPath.split("/connect/")[1].split("/")[0];
-
-  //   if (!_.get(grantConfig[provider], "enabled")) {
-  //     throw new ApplicationError("This provider is disabled");
-  //   }
-
-  //   if (!strapi.config.server.url.startsWith("http")) {
-  //     strapi.log.warn(
-  //       "You are using a third party provider for login. Make sure to set an absolute url in config/server.js. More info here: https://docs.strapi.io/developer-docs/latest/plugins/users-permissions.html#setting-up-the-server-url"
-  //     );
-  //   }
-
-  //   // Ability to pass OAuth callback dynamically
-  //   grantConfig[provider].callback =
-  //     _.get(ctx, "query.callback") ||
-  //     _.get(ctx, "session.grant.dynamic.callback") ||
-  //     grantConfig[provider].callback;
-  //   grantConfig[
-  //     provider
-  //   ].redirect_uri = `${strapi.config.server.url}/connect/${provider}/callback`;
-
-  //   return grant(grantConfig)(ctx, next);
-  //   // await validateGoogleAuthBody(ctx.request.body);
-  //   // const { email } = ctx.request.body;
-  //   // const user = await strapi.db
-  //   //   .query("plugin::users-permissions.user")
-  //   //   .findOne({
-  //   //     where: {
-  //   //       email: email.toLowerCase(),
-  //   //     },
-  //   //   });
-  //   // if (!user) {
-  //   //   throw new ValidationError("Invalid email");
-  //   // }
-
-  //   // const accessToken = strapi.plugins["users-permissions"].services[
-  //   //   "jwt"
-  //   // ].issue(
-  //   //   { id: user.id, ..._.pick(user, ["firstname", "lastname", "email"]) },
-  //   //   { expiresIn: "5s" }
-  //   // );
-
-  //   // const refreshToken = strapi.plugins["users-permissions"].services[
-  //   //   "jwt"
-  //   // ].issue({ id: user.id }, { expiresIn: "1y" });
-
-  //   // await strapi.db.query("plugin::users-permissions.user").update({
-  //   //   where: {
-  //   //     id: user.id,
-  //   //   },
-  //   //   data: {
-  //   //     refreshToken,
-  //   //   },
-  //   // });
-
-  //   // ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
-  //   // ctx.cookies.set("refreshToken", refreshToken, { httpOnly: true });
-
-  //   // return response(
-  //   //   ctx,
-  //   //   200,
-  //   //   "User authenticated successfully",
-  //   //   await sanitizeOutput(
-  //   //     user,
-  //   //     ctx,
-  //   //     strapi.getModel("plugin::users-permissions.user")
-  //   //   ),
-  //   //   refreshToken
-  //   // );
-  // };
-
-  plugin.controllers.auth["google"] = async (ctx) => {
-    console.log(ctx);
-    console.log(ctx.request.query);
-  };
+  plugin.controllers.auth["google"] = async (ctx) => {};
 
   plugin.controllers.auth["refreshToken"] = (ctx) => {
-    console.log(ctx.user);
     const { refreshToken, id } = ctx.user;
     const accessToken = strapi.plugins["users-permissions"].services[
       "jwt"
@@ -311,7 +210,6 @@ export default function (plugin) {
       { id: id, ..._.pick(ctx.user, ["firstname", "lastname", "email"]) },
       { expiresIn: "5m" }
     );
-    console.log(accessToken);
     ctx.cookies.set("accessToken", accessToken, { httpOnly: true });
     return response(
       ctx,
@@ -323,7 +221,6 @@ export default function (plugin) {
   };
 
   plugin.controllers.auth["logout"] = async (ctx) => {
-    console.log(ctx.user);
     const { id } = ctx.user;
     await strapi.db.query("plugin::users-permissions.user").update({
       where: {
@@ -357,7 +254,6 @@ export default function (plugin) {
     if (!user) {
       throw new ValidationError("Invalid email");
     }
-    console.log(email);
     const resetToken = strapi.plugins["users-permissions"].services[
       "jwt"
     ].issue({ id: user.id }, { expiresIn: "10m" });
@@ -411,8 +307,6 @@ export default function (plugin) {
           password: hashedPassword,
         },
       });
-    console.log(password);
-    console.log(updatedUser);
     return response(
       ctx,
       200,
@@ -424,7 +318,6 @@ export default function (plugin) {
 
   plugin.controllers.user["find"] = async (ctx) => {
     const { id } = ctx.request.params;
-    console.log(id, "fdsa");
     const user = await strapi.db
       .query("plugin::users-permissions.user")
       .findOne({
@@ -433,8 +326,6 @@ export default function (plugin) {
     if (!user) {
       throw new ValidationError("Invalid user");
     }
-
-    console.log(user);
 
     return response(
       ctx,
@@ -465,6 +356,16 @@ export default function (plugin) {
     {
       method: "POST",
       path: "/auth/login",
+      handler: "auth.callback",
+      config: {
+        middlewares: [],
+        policies: [],
+        prefix: "",
+      },
+    },
+    {
+      method: "POST",
+      path: "/auth/login/:provider",
       handler: "auth.callback",
       config: {
         middlewares: [],

@@ -10,7 +10,6 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
         const queries = ctx.request.query;
-        console.log("ddddd", queries);
         if (!("transactionType" in queries)) {
             const entity = await strapi
                 .service("api::category.category")
@@ -26,7 +25,6 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
     },
     async create(ctx) {
         const { data } = ctx.request.body;
-        console.log("fdsa", data);
         if (!("transaction_type" in data))
             return (0, errorHandler_util_1.ErrorHandler)(ctx, 400, "Transaction_type is missing from the request");
         const category = await strapi.db.query("api::category.category").findOne({
@@ -37,7 +35,6 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
                 ],
             },
         });
-        console.log(category);
         if (category) {
             return ctx.conflict("The Budget name already exist");
         }
@@ -56,14 +53,12 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
         return (0, response_1.response)(ctx, 200, "Category has been updated successfully", result.data, undefined);
     },
     async delete(ctx) {
-        console.log(ctx.params.id);
         const findCategory = await strapi.entityService.findOne("api::category.category", ctx.params.id, {
             populate: { users_permissions_user: true },
         });
         if (!findCategory) {
             return ctx.notFound("The Budget name not found");
         }
-        console.log(findCategory);
         const findTransactions = await strapi.entityService.findMany("api::transaction.transaction", {
             filters: {
                 category: findCategory.name,
@@ -72,7 +67,6 @@ exports.default = strapi_1.factories.createCoreController("api::category.categor
                 },
             },
         });
-        console.log(findTransactions);
         if (findTransactions.length > 0) {
             return ctx.badRequest("The Budget name is associated with transactions");
         }

@@ -46,9 +46,7 @@ const myOverideRoutes = [
     path: "/transactions", // Only match when the URL parameter is composed of lowercase letters
     handler: "transaction.findAll",
     config: {
-      middlewares: [
-        // middlewares.auth(strapi)
-      ],
+      middlewares: [],
     },
   },
   {
@@ -57,9 +55,7 @@ const myOverideRoutes = [
     path: "/transactions", // Only match when the URL parameter is composed of lowercase letters
     handler: "transaction.createTransaction",
     config: {
-      middlewares: [
-        // middlewares.auth(strapi)
-      ],
+      middlewares: [],
     },
   },
 ];

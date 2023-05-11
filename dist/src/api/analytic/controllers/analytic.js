@@ -13,7 +13,6 @@ exports.default = strapi_1.factories.createCoreController("api::analytic.analyti
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
         const queries = ctx.request.query;
-        console.log(queries);
         const { type, user } = queries;
         const entity = await strapi.service("api::analytic.analytic").find({
             ctx,
@@ -21,7 +20,6 @@ exports.default = strapi_1.factories.createCoreController("api::analytic.analyti
             type,
             user,
         });
-        console.log(entity);
         return (0, response_1.response)(ctx, 200, undefined, entity, undefined);
     },
 }));

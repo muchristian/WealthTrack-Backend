@@ -12,7 +12,6 @@ export default factories.createCoreController(
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
       const queries = ctx.request.query;
-      console.log(+queries.user === 0);
       const entity = await strapi
         .service("api::transaction-type.transaction-type")
         .find(queries);

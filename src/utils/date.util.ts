@@ -4,9 +4,7 @@ import { ErrorHandler } from "./errorHandler.util";
 
 export const getDataBytype = (data: any, type: string = "day"): {}[] => {
   if (type === "day") {
-    console.log(data[0].date);
     const newDate = new Date(reverse(data[0].date));
-    console.log(newDate);
     return data;
   } else {
     const groups = data.reduce((groups, d) => {
@@ -19,8 +17,6 @@ export const getDataBytype = (data: any, type: string = "day"): {}[] => {
           income: 0,
         };
       }
-      console.log(d);
-      console.log(groups[date].expense);
       groups[date] = Object.assign(groups[date], {
         expense: groups[date].expense + d.expense,
         "debt/loan": groups[date]["debt/loan"] + d["debt/loan"],
@@ -28,8 +24,6 @@ export const getDataBytype = (data: any, type: string = "day"): {}[] => {
       });
       return groups;
     }, {});
-
-    console.log(Object.values(groups));
     return Object.values(groups);
   }
 };
@@ -39,7 +33,6 @@ const reverse = (date: string) => {
 };
 
 const dateFormByType = (date: Date, type: string) => {
-  console.log(date);
   return type === "month"
     ? date.toLocaleString("en-us", { month: "short", year: "numeric" })
     : date.toLocaleString("en-us", { year: "numeric" });

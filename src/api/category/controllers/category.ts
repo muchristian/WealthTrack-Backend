@@ -12,7 +12,6 @@ export default factories.createCoreController(
     // Method 2: Wrapping a core action (leaves core logic in place)
     async findAll(ctx) {
       const queries = ctx.request.query;
-      console.log("ddddd", queries);
       if (!("transactionType" in queries)) {
         const entity = await strapi
           .service("api::category.category")
@@ -28,7 +27,6 @@ export default factories.createCoreController(
 
     async create(ctx) {
       const { data } = ctx.request.body;
-      console.log("fdsa", data);
       if (!("transaction_type" in data))
         return ErrorHandler(
           ctx,
@@ -43,7 +41,6 @@ export default factories.createCoreController(
           ],
         },
       });
-      console.log(category);
       if (category) {
         return ctx.conflict("The Budget name already exist");
       }
@@ -77,7 +74,6 @@ export default factories.createCoreController(
     },
 
     async delete(ctx) {
-      console.log(ctx.params.id);
       const findCategory = await strapi.entityService.findOne(
         "api::category.category",
         ctx.params.id,
@@ -88,7 +84,6 @@ export default factories.createCoreController(
       if (!findCategory) {
         return ctx.notFound("The Budget name not found");
       }
-      console.log(findCategory);
       const findTransactions = await strapi.entityService.findMany(
         "api::transaction.transaction",
         {
@@ -100,7 +95,6 @@ export default factories.createCoreController(
           },
         }
       );
-      console.log(findTransactions);
       if (findTransactions.length > 0) {
         return ctx.badRequest(
           "The Budget name is associated with transactions"
